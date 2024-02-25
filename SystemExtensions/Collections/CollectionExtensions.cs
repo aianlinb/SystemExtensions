@@ -14,7 +14,7 @@ namespace SystemExtensions.Collections {
 					var i = 0;
 					if (value is not null)
 						foreach (var item in source) {
-							if (EqualityComparer<T>.Default.Equals(item, value))
+							if (EqualityComparer<T>.Default.Equals(value, item))
 								return i;
 							++i;
 						}

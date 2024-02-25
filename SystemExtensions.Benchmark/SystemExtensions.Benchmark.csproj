@@ -9,7 +9,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <PackageReference Include="BenchmarkDotNet" Version="*" />
+		<PackageReference Include="BenchmarkDotNet" Version="*" />
 	</ItemGroup>
 
 	<ItemGroup>

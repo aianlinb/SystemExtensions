@@ -34,13 +34,13 @@
 			action();
 		}
 		public static async ValueTask ContinueWith(this ValueTask task, Action<ValueTask> continuation) {
-			continuation(await ContinueWith_Core(task));
+			continuation(await ContinueWith_Core(task).ConfigureAwait(false));
 		}
 		public static async ValueTask ContinueWith<T>(this ValueTask<T> task, Action<ValueTask<T>> continuation) {
-			continuation(await ContinueWith_Core(task));
+			continuation(await ContinueWith_Core(task).ConfigureAwait(false));
 		}
 		public static async ValueTask<TResult> ContinueWith<T, TResult>(this ValueTask<T> task, Func<ValueTask<T>, TResult> continuation) {
-			return continuation(await ContinueWith_Core(task));
+			return continuation(await ContinueWith_Core(task).ConfigureAwait(false));
 		}
 
 		public static async ValueTask ContinueWith(this ValueTask task, Action action, CancellationToken cancellation) {
@@ -49,22 +49,22 @@
 			action();
 		}
 		public static async ValueTask ContinueWith(this ValueTask task, Action<ValueTask> continuation, CancellationToken cancellation) {
-			continuation(await ContinueWith_Core(task, cancellation));
+			continuation(await ContinueWith_Core(task, cancellation).ConfigureAwait(false));
 		}
 		public static async ValueTask ContinueWith<T>(this ValueTask<T> task, Action<ValueTask<T>> continuation, CancellationToken cancellation) {
-			continuation(await ContinueWith_Core(task, cancellation));
+			continuation(await ContinueWith_Core(task, cancellation).ConfigureAwait(false));
 		}
 		public static async ValueTask<TResult> ContinueWith<T, TResult>(this ValueTask<T> task, Func<ValueTask<T>, TResult> continuation, CancellationToken cancellation) {
-			return continuation(await ContinueWith_Core(task, cancellation));
+			return continuation(await ContinueWith_Core(task, cancellation).ConfigureAwait(false));
 		}
 		public static async ValueTask ContinueWith(this ValueTask task, Action<ValueTask, CancellationToken> continuation, CancellationToken cancellation) {
-			continuation(await ContinueWith_Core(task, cancellation), cancellation);
+			continuation(await ContinueWith_Core(task, cancellation).ConfigureAwait(false), cancellation);
 		}
 		public static async ValueTask ContinueWith<T>(this ValueTask<T> task, Action<ValueTask<T>, CancellationToken> continuation, CancellationToken cancellation) {
-			continuation(await ContinueWith_Core(task, cancellation), cancellation);
+			continuation(await ContinueWith_Core(task, cancellation).ConfigureAwait(false), cancellation);
 		}
 		public static async ValueTask<TResult> ContinueWith<T, TResult>(this ValueTask<T> task, Func<ValueTask<T>, CancellationToken, TResult> continuation, CancellationToken cancellation) {
-			return continuation(await ContinueWith_Core(task, cancellation), cancellation);
+			return continuation(await ContinueWith_Core(task, cancellation).ConfigureAwait(false), cancellation);
 		}
 	}
 }

@@ -4,6 +4,5 @@
 	/// </summary>
 	public static class RuntimeHelpers {
 		public static bool IsBitwiseEquatable<T>() => throw null!;
-		public static unsafe MethodTable* GetMethodTable(object obj) => throw null!;
 	}
 }
