@@ -14,7 +14,7 @@ namespace SystemExtensions.Collections {
 	/// make sure to call <see cref="Dispose"/> to return the buffer to the <see cref="ArrayPool{T}"/>
 	/// </remarks>
 	public ref struct ValueList<T> { // TODO: Analyzer to prevent from copying
-		public static ValueList<T> Empty => default;
+		public static ValueList<T> Empty => new([]);
 
 		private T[]? rentedBuffer;
 		private Span<T> Buffer;
@@ -23,9 +23,7 @@ namespace SystemExtensions.Collections {
 		public readonly int Capacity => Buffer.Length;
 
 		public readonly T this[int index] {
-			[MethodImpl(MethodImplOptions.AggressiveInlining)]
-			get => AsSpan()[index];
-			[MethodImpl(MethodImplOptions.AggressiveInlining)]
+			get => AsReadOnlySpan()[index];
 			set => AsSpan()[index] = value;
 		}
 
@@ -40,17 +38,20 @@ namespace SystemExtensions.Collections {
 			ArgumentOutOfRangeException.ThrowIfGreaterThan((uint)initialCount, (uint)initialBuffer.Length);
 			Buffer = initialBuffer;
 			Count = initialCount;
-			self = ref Unsafe.AsRef(ref rentedBuffer);
+			self = ref Unsafe.AsRef(in rentedBuffer);
 		}
 
+		/// <param name="initialCapacity">
+		/// Specifies that the initial capacity of the list should be at least <paramref name="initialCapacity"/>.
+		/// </param>
 		public ValueList(int initialCapacity) {
-			Buffer = rentedBuffer = ArrayPool<T>.Shared.Rent(initialCapacity);
-			self = ref Unsafe.AsRef<T[]?>(ref rentedBuffer);
+			if (initialCapacity > 0)
+				Buffer = rentedBuffer = ArrayPool<T>.Shared.Rent(initialCapacity);
+			self = ref Unsafe.AsRef(in rentedBuffer);
 		}
 
 		public ValueList() : this(0) { }
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public void Add(T item) {
 			EnsureRemainingCapacity(1);
 			Unsafe.Add(ref GetPinnableReference(), Count) = item;
@@ -106,7 +107,7 @@ namespace SystemExtensions.Collections {
 				if (!Unsafe.AreSame(ref self, ref rentedBuffer))
 					ThrowHelper.Throw<InvalidOperationException>("A copy of ValueList<T> is detected, this type can only be passed by reference");
 				var newBuffer = ArrayPool<T>.Shared.Rent(capacity);
-				AsSpan().CopyTo(newBuffer);
+				AsReadOnlySpan().CopyTo(newBuffer);
 				Buffer = newBuffer;
 				if (rentedBuffer is not null)
 					ArrayPool<T>.Shared.Return(rentedBuffer);
@@ -114,26 +115,25 @@ namespace SystemExtensions.Collections {
 			}
 		}
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public readonly Span<T>.Enumerator GetEnumerator() => AsSpan().GetEnumerator();
+		public readonly ReadOnlySpan<T>.Enumerator GetEnumerator() => AsReadOnlySpan().GetEnumerator();
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public readonly Span<T> AsSpan() => MemoryMarshal.CreateSpan(ref GetPinnableReference(), Count); // Skip bounds check
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public readonly Span<T> AsSpan(int index) => AsSpan()[index..];
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public readonly Span<T> AsSpan(int index, int length) => AsSpan().Slice(index, length);
+		public readonly ReadOnlySpan<T> AsReadOnlySpan() => MemoryMarshal.CreateReadOnlySpan(ref GetPinnableReference(), Count); // Skip bounds check
+		public readonly ReadOnlySpan<T> AsReadOnlySpan(int index) => AsReadOnlySpan()[index..];
+		public readonly ReadOnlySpan<T> AsReadOnlySpan(int index, int length) => AsReadOnlySpan().Slice(index, length);
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public readonly bool Contains(T item) => Count != 0 && IndexOf(item) >= 0;
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public readonly int IndexOf(T item) => SpanExtensions.IndexOf(AsSpan(), item);
+
+		public readonly int IndexOf(T item) => SpanExtensions.IndexOf(AsReadOnlySpan(), item);
+
 		public readonly void CopyTo(T[] array, int arrayIndex) => CopyTo(array.AsSpan(arrayIndex));
-		public readonly void CopyTo(scoped Span<T> span) => AsSpan().CopyTo(span);
+		public readonly void CopyTo(scoped Span<T> span) => AsReadOnlySpan().CopyTo(span);
 
 		public void Insert(int index, T item) {
 			EnsureRemainingCapacity(1);
-			AsSpan(index).CopyToUnchecked(ref Unsafe.Add(ref GetPinnableReference(), index + 1));
+			AsReadOnlySpan(index).CopyToUnchecked(ref Unsafe.Add(ref GetPinnableReference(), index + 1));
 			Unsafe.Add(ref GetPinnableReference(), index) = item;
 			++Count;
 		}
@@ -145,7 +145,7 @@ namespace SystemExtensions.Collections {
 			// There's a rare case that the `items` overlaps with the destination below line copying to,
 			// but the memory there is uninitialized and shouldn't be used by the user,
 			// so we treat it as an unsafe behavior caused by the user themselves and don't check it.
-			AsSpan(index).CopyToUnchecked(ref Unsafe.Add(ref GetPinnableReference(), index + items.Length));
+			AsReadOnlySpan(index).CopyToUnchecked(ref Unsafe.Add(ref GetPinnableReference(), index + items.Length));
 			items.CopyToUnchecked(ref Unsafe.Add(ref GetPinnableReference(), index));
 			Count += items.Length;
 		}
@@ -155,7 +155,7 @@ namespace SystemExtensions.Collections {
 		public void InsertRange(int index, scoped in ReadOnlySequence<T> items) {
 			var len = checked((int)items.Length);
 			EnsureRemainingCapacity(len);
-			AsSpan(index).CopyToUnchecked(ref Unsafe.Add(ref GetPinnableReference(), index + len));
+			AsReadOnlySpan(index).CopyToUnchecked(ref Unsafe.Add(ref GetPinnableReference(), index + len));
 			foreach (var segment in items) {
 				segment.Span.CopyToUnchecked(ref Unsafe.Add(ref GetPinnableReference(), index));
 				index += segment.Length;
@@ -173,7 +173,7 @@ namespace SystemExtensions.Collections {
 		}
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public void RemoveAt(int index) {
-			AsSpan(index + 1).CopyToUnchecked(ref Unsafe.Add(ref GetPinnableReference(), index));
+			AsReadOnlySpan(index + 1).CopyToUnchecked(ref Unsafe.Add(ref GetPinnableReference(), index));
 			--Count;
 
 			if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
@@ -191,16 +191,42 @@ namespace SystemExtensions.Collections {
 			if (length == 0)
 				return;
 
-			AsSpan(startIndex + length).CopyToUnchecked(ref Unsafe.Add(ref GetPinnableReference(), startIndex));
+			AsReadOnlySpan(startIndex + length).CopyToUnchecked(ref Unsafe.Add(ref GetPinnableReference(), startIndex));
 			Count -= length;
 
 			if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
 				Buffer.Slice(Count, length).Clear();
 		}
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public void RemoveRange(Range range) {
 			var (offset, length) = range.GetOffsetAndLength(Count);
 			RemoveRange(offset, length);
+		}
+		/// <param name="ranges">
+		/// Ranges to remove. Must be sorted in ascending order, and must not overlap.
+		/// </param>
+		/// <remarks>
+		/// The <paramref name="ranges"/> must be sorted in ascending order, and must not overlap.
+		/// </remarks>
+		public void RemoveRanges(IEnumerable<Range> ranges) {
+			using var it = ranges.GetEnumerator();
+			if (!it.MoveNext())
+				return;
+			var (pos, lastEnd) = it.Current.GetOffsetAndEnd(Count);
+			while (it.MoveNext()) {
+				var (offset, end) = it.Current.GetOffsetAndEnd(Count);
+				var length = offset - lastEnd;
+				if (length < 0)
+					ThrowHelper.Throw<ArgumentException>("The provided ranges must be sorted in ascending order, and must not overlap");
+				AsReadOnlySpan(lastEnd, length)
+					.CopyToUnchecked(ref Unsafe.Add(ref GetPinnableReference(), pos));
+				pos += length;
+				lastEnd = end;
+			}
+			AsReadOnlySpan(lastEnd).CopyToUnchecked(ref Unsafe.Add(ref GetPinnableReference(), pos));
+			pos += Count - lastEnd;
+			if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+				AsSpan(pos).Clear();
+			Count = pos;
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -220,7 +246,6 @@ namespace SystemExtensions.Collections {
 		}
 
 		[EditorBrowsable(EditorBrowsableState.Advanced)]
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public readonly ref T GetPinnableReference() => ref MemoryMarshal.GetReference(Buffer);
 	}
 }

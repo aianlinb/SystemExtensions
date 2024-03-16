@@ -10,22 +10,26 @@ namespace SystemExtensions {
 		/// Returns an <see cref="Exception"/> of the specified type <typeparamref name="T"/> with its parameterless constructor
 		/// </summary>
 		/// <returns><typeparamref name="T"/> with its parameterless constructor</returns>
+		[MethodImpl(MethodImplOptions.NoInlining)]
 		public static T Create<T>() where T : new() => new();
 		/// <summary>
 		/// Returns an <see cref="Exception"/> of the specified type <typeparamref name="T"/> instantiated with <paramref name="arguments"/>
 		/// </summary>
 		/// <returns><typeparamref name="T"/> with its parameterless constructor</returns>
+		[MethodImpl(MethodImplOptions.NoInlining)]
 		public static T Create<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T>(params object?[] arguments) where T : Exception => (Activator.CreateInstance(typeof(T), arguments) as T)!;
 		/// <summary>
 		/// Throws an <see cref="Exception"/> of the specified type <typeparamref name="T"/> with its parameterless constructor
 		/// </summary>
 		[DoesNotReturn]
-		public static void Throw<T>() where T : Exception, new() => throw Create<T>();
+		[MethodImpl(MethodImplOptions.NoInlining)]
+		public static void Throw<T>() where T : Exception, new() => throw new T();
 		/// <summary>
 		/// Throws an <see cref="Exception"/> of the specified type <typeparamref name="T"/> instantiated with <paramref name="arguments"/>
 		/// </summary>
 		[DoesNotReturn]
-		public static void Throw<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T>(params object?[] arguments) where T : Exception => throw Create<T>(arguments);
+		[MethodImpl(MethodImplOptions.NoInlining)]
+		public static void Throw<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T>(params object?[] arguments) where T : Exception => throw (Activator.CreateInstance(typeof(T), arguments) as T)!;
 
 		/// <summary>
 		/// Throws an <see cref="ArgumentOutOfRangeException"/>
@@ -57,6 +61,19 @@ namespace SystemExtensions {
 		[DoesNotReturn]
 		public static void ThrowKeepStackTrace(this Exception exception) {
 			ExceptionDispatchInfo.Capture(exception).Throw();
+		}
+
+		/// <summary>
+		/// Gets the name and message of the <paramref name="exception"/>, including its inner exceptions
+		/// </summary>
+		/// <remarks>
+		/// Equivalent to <see cref="Exception.ToString"/> but without the stack trace
+		/// </remarks>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static string GetNameAndMessage(this Exception exception) {
+			return exception.InnerException is null ?
+				$"{exception.GetType()}: {exception.Message}"
+				: $"{exception.GetType()}: {exception.Message}{Environment.NewLine} ---> {GetNameAndMessage(exception.InnerException)}";
 		}
 	}
 }

@@ -43,8 +43,11 @@ namespace SystemExtensions.Spans {
 		[EditorBrowsable(EditorBrowsableState.Advanced)]
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static Span<T> SliceUnchecked<T>(this Span<T> source, in Range range) {
-			var (offset, end) = range.GetOffsetAndEndUnchecked(source.Length);
-			return MemoryMarshal.CreateSpan(ref Unsafe.Add(ref MemoryMarshal.GetReference(source), (nint)(uint)offset /* force zero-extension */), end - offset);
+			var offset = range.Start.GetOffset(source.Length);
+			return MemoryMarshal.CreateSpan(
+				ref Unsafe.Add(ref MemoryMarshal.GetReference(source), (nint)(uint)offset /* force zero-extension */),
+				range.End.GetOffset(source.Length) - offset
+			);
 		}
 		/// <summary>
 		/// <see cref="ReadOnlySpan{T}.Slice(int)"/> without bounds checking
@@ -68,8 +71,11 @@ namespace SystemExtensions.Spans {
 		[EditorBrowsable(EditorBrowsableState.Advanced)]
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static ReadOnlySpan<T> SliceUnchecked<T>(this ReadOnlySpan<T> source, in Range range) {
-			var (offset, end) = range.GetOffsetAndEndUnchecked(source.Length);
-			return MemoryMarshal.CreateReadOnlySpan(ref Unsafe.Add(ref MemoryMarshal.GetReference(source), (nint)(uint)offset /* force zero-extension */), end - offset);
+			var offset = range.Start.GetOffset(source.Length);
+			return MemoryMarshal.CreateReadOnlySpan(
+				ref Unsafe.Add(ref MemoryMarshal.GetReference(source), (nint)(uint)offset /* force zero-extension */),
+				range.End.GetOffset(source.Length) - offset
+			);
 		}
 
 		/// <summary>
@@ -430,12 +436,14 @@ namespace SystemExtensions.Spans {
 			ref T dst = ref MemoryMarshal.GetReference(destination);
 
 			nint byteOffset = Unsafe.ByteOffset(ref src, ref dst);
-			if (byteOffset != 0 &&
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
-				((nuint)byteOffset < (nuint)((nint)source.Length * sizeof(T)) ||
-				 (nuint)byteOffset > (nuint)(-((nint)destination.Length * sizeof(T))))) {
-#pragma warning restore CS8500
-				ThrowHelper.Throw<ArgumentException>("Source and destination span overlapped", nameof(destination));
+			unchecked {
+				if (byteOffset != 0 &&
+	#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
+					((nuint)byteOffset < (nuint)((nint)source.Length * sizeof(T)) ||
+					 (nuint)byteOffset > (nuint)(-((nint)destination.Length * sizeof(T))))) {
+	#pragma warning restore CS8500
+					ThrowHelper.Throw<ArgumentException>("Source and destination span overlapped", nameof(destination));
+				}
 			}
 
 			if (corelib::System.Runtime.CompilerServices.RuntimeHelpers.IsBitwiseEquatable<T>()) {
