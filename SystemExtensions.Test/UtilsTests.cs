@@ -1,7 +1,7 @@
 ﻿namespace SystemExtensions.Tests {
 	[TestClass]
 	public class UtilsTests {
-		private readonly Range[] ranges = [default, Range.All, ^0..^0, 40..^41, 5.., (..3)];
+		private static readonly Range[] ranges = [default, Range.All, ^0..^0, 40..^41, 5.., (..3)];
 
 		[TestMethod]
 		[DataRow(0L)]

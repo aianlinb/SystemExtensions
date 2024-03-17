@@ -7,8 +7,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SystemExtensions", "SystemE
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SystemExtensions.Tests", "SystemExtensions.Test\SystemExtensions.Tests.csproj", "{B5987FEB-5F35-441A-9B4D-23105297D624}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SystemExtensions.Benchmark", "SystemExtensions.Benchmark\SystemExtensions.Benchmark.csproj", "{847A3C60-7C02-45DA-AE5B-29A2E3B4533C}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Private.CoreLib", "System.Private.CoreLib\System.Private.CoreLib.csproj", "{384C23AB-CA15-43D1-8FB9-9BDF787D6B5A}"
 EndProject
 Global
@@ -25,10 +23,6 @@ Global
 		{B5987FEB-5F35-441A-9B4D-23105297D624}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B5987FEB-5F35-441A-9B4D-23105297D624}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B5987FEB-5F35-441A-9B4D-23105297D624}.Release|Any CPU.Build.0 = Release|Any CPU
-		{847A3C60-7C02-45DA-AE5B-29A2E3B4533C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{847A3C60-7C02-45DA-AE5B-29A2E3B4533C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{847A3C60-7C02-45DA-AE5B-29A2E3B4533C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{847A3C60-7C02-45DA-AE5B-29A2E3B4533C}.Release|Any CPU.Build.0 = Release|Any CPU
 		{384C23AB-CA15-43D1-8FB9-9BDF787D6B5A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{384C23AB-CA15-43D1-8FB9-9BDF787D6B5A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{384C23AB-CA15-43D1-8FB9-9BDF787D6B5A}.Release|Any CPU.ActiveCfg = Release|Any CPU

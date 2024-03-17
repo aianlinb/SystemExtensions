@@ -4,7 +4,7 @@ using System.Runtime.CompilerServices;
 
 namespace SystemExtensions.Collections {
 	public static class CollectionExtensions {
-		public static int IndexOf<T>(this IEnumerable<T> source, T value) {
+		public static int IndexOf<T, TEnumerable>(this TEnumerable source, T value) where TEnumerable : IEnumerable<T> {
 			switch (source) {
 				case IList<T> listt: // includes array & List<T>
 					return listt.IndexOf(value);
@@ -28,7 +28,7 @@ namespace SystemExtensions.Collections {
 			}
 		}
 
-		public static int IndexOf<T>(this IEnumerable<T> source, Predicate<T> match, out T? value) {
+		public static int IndexOf<T, TEnumerable>(this TEnumerable source, Predicate<T> match, out T value) where TEnumerable : IEnumerable<T> {
 			var i = 0;
 			foreach (var item in source) {
 				if (match(item)) {
@@ -37,7 +37,7 @@ namespace SystemExtensions.Collections {
 				}
 				++i;
 			}
-			value = default;
+			value = default!;
 			return -1;
 		}
 
