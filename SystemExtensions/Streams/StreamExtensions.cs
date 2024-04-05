@@ -1,6 +1,8 @@
 ﻿using System.Buffers;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+
+using SystemExtensions.Collections;
 using SystemExtensions.Spans;
 
 namespace SystemExtensions.Streams {
@@ -69,6 +71,35 @@ namespace SystemExtensions.Streams {
 			if (list.Count < count)
 				CollectionsMarshal.SetCount(list, count);
 			Read(stream, CollectionsMarshal.AsSpan(list).Slice(offset, length));
+		}
+
+		public static unsafe byte[] ReadToEnd(this Stream stream) {
+			if (!stream.CanSeek)
+				return ReadToEndUnseekable(stream);
+			var buffer = GC.AllocateUninitializedArray<byte>(checked((int)(stream.Length - stream.Position)));
+			stream.ReadExactly(buffer);
+			return buffer;
+		}
+		private static unsafe byte[] ReadToEndUnseekable(Stream stream) {
+			var buffer = ArrayPool<byte>.Shared.Rent(4096);
+			try {
+				var l = 0;
+				int lastRead;
+				do {
+					if (buffer.Length == l) {
+						byte[] toReturn = buffer;
+						buffer = ArrayPool<byte>.Shared.Rent(buffer.Length + 1);
+						new ReadOnlySpan<byte>(toReturn).CopyToUnchecked(ref MemoryMarshal.GetArrayDataReference(buffer));
+						ArrayPool<byte>.Shared.Return(toReturn);
+					}
+
+					lastRead = stream.Read(buffer, l, buffer.Length - l);
+					l += lastRead;
+				} while (lastRead > 0);
+				return buffer[..l];
+			} finally {
+				ArrayPool<byte>.Shared.Return(buffer);
+			}
 		}
 
 		/// <summary>

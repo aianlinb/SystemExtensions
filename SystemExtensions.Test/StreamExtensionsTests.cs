@@ -5,7 +5,7 @@ namespace SystemExtensions.Tests {
 		[DataRow(0)]
 		[DataRow(5)]
 		[DataRow(99999)]
-		public void ReadString_ReadStringTest(int length) {
+		public void ReadStringTest(int length) {
 			// Arrange
 			var stream = new MemoryStream();
 			var expected = Random.Shared.NextString(length);
@@ -24,7 +24,7 @@ namespace SystemExtensions.Tests {
 		[DataRow(0)]
 		[DataRow(5)]
 		[DataRow(99999)]
-		public void Write_WriteStringTest(int length) {
+		public void WriteStringTest(int length) {
 			// Arrange
 			var stream = new MemoryStream();
 			var expected = Random.Shared.NextString(length);
@@ -41,7 +41,7 @@ namespace SystemExtensions.Tests {
 		}
 
 		[TestMethod]
-		public void Read_ReadWriteStructTest() {
+		public void ReadWriteStructTest() {
 			// Arrange
 			var stream = new MemoryStream();
 			var expected = TestStruct.CreateRandom();
@@ -62,7 +62,7 @@ namespace SystemExtensions.Tests {
 		[DataRow(0)]
 		[DataRow(5)]
 		[DataRow(99999)]
-		public void Read_ReadWriteArrayOfStructTest(int length) {
+		public void ReadWriteArrayOfStructTest(int length) {
 			// Arrange
 			var stream = new MemoryStream();
 			var expected = Enumerable.Range(0, length).Select(_ => TestStruct.CreateRandom()).ToArray();
@@ -87,7 +87,7 @@ namespace SystemExtensions.Tests {
 		[DataRow(1, 1)]
 		[DataRow(0, 50)]
 		[DataRow(25, 100)]
-		public void Read_ReadWriteListOfStructTest(int offset, int count) {
+		public void ReadWriteListOfStructTest(int offset, int count) {
 			// Arrange
 			var stream = new MemoryStream();
 			var expected = Enumerable.Range(0, Random.Shared.Next(offset + count, Math.Max(256, offset + count))).Select(_ => TestStruct.CreateRandom()).ToList();
@@ -107,6 +107,26 @@ namespace SystemExtensions.Tests {
 			// Assert
 			CollectionAssert.AreEqual(expected, result1);
 			CollectionAssert.AreEqual(expected, result2);
+		}
+
+		[TestMethod]
+		public void ReadToEndTest() {
+			// Arrange
+			var stream = new MemoryStream();
+			Assert.AreEqual(0, stream.ReadToEnd().Length);
+
+			var expected = new byte[Random.Shared.Next(1, 2000000)];
+			Random.Shared.NextBytes(expected);
+			stream.Write(expected);
+
+			var pos = Random.Shared.Next(0, 2);
+			stream.Position = pos;
+
+			// Act
+			var result = stream.ReadToEnd();
+
+			// Assert
+			new ReadOnlySpan<byte>(expected, pos, expected.Length - pos).SequenceEqual(result);
 		}
 	}
 }

@@ -36,7 +36,7 @@ namespace SystemExtensions {
 		/// </remarks>
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static unsafe T AsObject<T>(Span<byte> buffer) where T : class {
-			if (buffer.Length < Size(typeof(T)))
+			if (buffer.Length < Size<T>())
 				ThrowHelper.Throw<ArgumentException>("The length of the buffer is less than ValueObject.Size(Type)");
 			
 			Unsafe.As<byte, nint>(ref MemoryMarshal.GetReference(buffer)) = 0; // ObjectHeader
@@ -57,7 +57,7 @@ namespace SystemExtensions {
 		/// </remarks>
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static unsafe T CreateObject<T>(Span<byte> buffer, ConstructorInfo? constructor, object?[]? parameters) where T : class {
-			if (buffer.Length < Size(typeof(T)))
+			if (buffer.Length < Size<T>())
 				ThrowHelper.Throw<ArgumentException>("The length of the buffer is less than ValueObject.Size(Type)");
 			buffer.Clear();
 
@@ -98,6 +98,7 @@ namespace SystemExtensions {
 		/// </remarks>
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static unsafe object Box<T>(Span<byte> buffer, in T value) where T : struct {
+#pragma warning disable CS8500
 			var size = sizeof(nint) * 2 + sizeof(T);
 			if (buffer.Length < size)
 				ThrowHelper.Throw<ArgumentException>("The length of the buffer is less than ValueObject.Size(Type)");
