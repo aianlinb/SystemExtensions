@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+
 using SystemExtensions.Tasks;
 
 namespace SystemExtensions.Streams {

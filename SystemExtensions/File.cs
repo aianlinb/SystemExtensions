@@ -1,8 +1,11 @@
 ﻿extern alias corelib;
+
 using Microsoft.Win32.SafeHandles;
+
 using SystemExtensions.Spans;
 
 namespace SystemExtensions {
+	using RandomAccess = corelib::System.IO.RandomAccess;
 	public static class File {
 		/// <summary>
 		/// <see cref="System.IO.File.ReadAllBytes"/> but writes to a <see cref="Span{T}"/>
@@ -15,13 +18,13 @@ namespace SystemExtensions {
 			// SequentialScan is a perf hint that requires extra sys-call on non-Windows OSes.
 			using SafeFileHandle sfh = System.IO.File.OpenHandle(path, FileMode.Open,
 				FileAccess.Read, FileShare.Read, OperatingSystem.IsWindows() ? FileOptions.SequentialScan : FileOptions.None);
-			
+
 			int l;
 			for (bytesRead = 0; bytesRead < bytes.Length; bytesRead += l)
-				if ((l = corelib::System.IO.RandomAccess.ReadAtOffset(sfh, bytes.SliceUnchecked(bytesRead), bytesRead)) == 0)
+				if ((l = RandomAccess.ReadAtOffset(sfh, bytes.SliceUnchecked(bytesRead), bytesRead)) == 0)
 					return true;
-			
-			return corelib::System.IO.RandomAccess.ReadAtOffset(sfh, stackalloc byte[1], bytesRead) == 0;
+
+			return RandomAccess.ReadAtOffset(sfh, stackalloc byte[1], bytesRead) == 0;
 		}
 		/// <summary>
 		/// <see cref="System.IO.File.ReadAllBytesAsync"/> but writes to a <see cref="Memory{T}"/>
@@ -42,7 +45,7 @@ namespace SystemExtensions {
 
 				var bytesRead = 0;
 				while (bytesRead < bytes.Length) {
-					var l = await corelib::System.IO.RandomAccess.ReadAtOffsetAsync(sfh, bytes[bytesRead..], bytesRead, cancellationToken).ConfigureAwait(false);
+					var l = await RandomAccess.ReadAtOffsetAsync(sfh, bytes[bytesRead..], bytesRead, cancellationToken).ConfigureAwait(false);
 					bytesRead += l;
 					if (l == 0)
 						break;
@@ -57,7 +60,7 @@ namespace SystemExtensions {
 		public static void WriteAllBytes(string path, ReadOnlySpan<byte> bytes) {
 			using SafeFileHandle sfh = System.IO.File.OpenHandle(path, FileMode.Create,
 				FileAccess.Write, FileShare.Read, FileOptions.None, bytes.Length);
-			corelib::System.IO.RandomAccess.WriteAtOffset(sfh, bytes, 0);
+			RandomAccess.WriteAtOffset(sfh, bytes, 0);
 		}
 		/// <summary>
 		/// <see cref="System.IO.File.WriteAllBytesAsync"/> but accepts a <see cref="ReadOnlyMemory{T}"/>
@@ -70,7 +73,7 @@ namespace SystemExtensions {
 			static async ValueTask Core(string path, ReadOnlyMemory<byte> bytes, CancellationToken cancellationToken) {
 				using SafeFileHandle sfh = System.IO.File.OpenHandle(path, FileMode.Create,
 					FileAccess.Write, FileShare.Read, FileOptions.Asynchronous, bytes.Length);
-				await corelib::System.IO.RandomAccess.WriteAtOffsetAsync(sfh, bytes, 0, cancellationToken).ConfigureAwait(false);
+				await RandomAccess.WriteAtOffsetAsync(sfh, bytes, 0, cancellationToken).ConfigureAwait(false);
 			}
 		}
 	}

@@ -41,6 +41,16 @@ namespace SystemExtensions.Collections {
 			return -1;
 		}
 
+		/// <summary>
+		/// Returns a wrapper with <see cref="IEnumerable{T}.GetEnumerator"/> method that returns <paramref name="source"/> as is.
+		/// </summary>
+		/// <remarks>
+		/// Note that the returned <see cref="IEnumerable{T}"/> cannot be enumerate repeatedly.
+		/// And it will start from current state of the <see cref="IEnumerator{T}"/> passed.
+		/// </remarks>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static EnumeratorWrapper<T> AsEnumerable<T>(this IEnumerator<T> source) => new(source);
+
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static IReadOnlyList<T> AsIReadOnly<T>(this IList<T> list) {
 			return list is IReadOnlyList<T> irl ? irl : new ReadOnlyListWrapper<T>(list);
@@ -58,27 +68,30 @@ namespace SystemExtensions.Collections {
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static IReadOnlyDictionary<TKey, TValue> AsIReadOnly<TKey, TValue>(this IDictionary<TKey, TValue> dict) {
-			return dict is IReadOnlyDictionary<TKey, TValue> ird ? ird : new ReadOnlDictionaryWrapper<TKey, TValue>(dict);
+			return dict is IReadOnlyDictionary<TKey, TValue> ird ? ird : new ReadOnlyDictionaryWrapper<TKey, TValue>(dict);
 		}
 
 		#region Wrappers
-		[method: MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private sealed class ReadOnlyListWrapper<T>(IList<T> list) : IReadOnlyList<T> {
+		/// <summary>
+		/// See <see cref="AsEnumerable{T}(IEnumerator{T})"/>
+		/// </summary>
+		public readonly struct EnumeratorWrapper<T>(IEnumerator<T> enumerator) : IEnumerable<T> {
+			/// <returns>The enumerator passed to the constructor as is</returns>
+			public IEnumerator<T> GetEnumerator() => enumerator;
+			IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+		}
+		private readonly struct ReadOnlyListWrapper<T>(IList<T> list) : IReadOnlyList<T> {
 			public T this[int index] => list[index];
 			public int Count => list.Count;
 			public IEnumerator<T> GetEnumerator() => list.GetEnumerator();
 			IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 		}
-
-		[method: MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private sealed class ReadOnlyCollectionWrapper<T>(ICollection<T> collection) : IReadOnlyCollection<T> {
+		private readonly struct ReadOnlyCollectionWrapper<T>(ICollection<T> collection) : IReadOnlyCollection<T> {
 			public int Count => collection.Count;
 			public IEnumerator<T> GetEnumerator() => collection.GetEnumerator();
 			IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 		}
-
-		[method: MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private sealed class ReadOnlySetWrapper<T>(ISet<T> set) : IReadOnlySet<T> {
+		private readonly struct ReadOnlySetWrapper<T>(ISet<T> set) : IReadOnlySet<T> {
 			public int Count => set.Count;
 			public bool Contains(T item) => set.Contains(item);
 			public IEnumerator<T> GetEnumerator() => set.GetEnumerator();
@@ -90,9 +103,7 @@ namespace SystemExtensions.Collections {
 			public bool Overlaps(IEnumerable<T> other) => set.Overlaps(other);
 			public bool SetEquals(IEnumerable<T> other) => set.SetEquals(other);
 		}
-
-		[method: MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private sealed class ReadOnlDictionaryWrapper<TKey, TValue>(IDictionary<TKey, TValue> dict) : IReadOnlyDictionary<TKey, TValue> {
+		private readonly struct ReadOnlyDictionaryWrapper<TKey, TValue>(IDictionary<TKey, TValue> dict) : IReadOnlyDictionary<TKey, TValue> {
 			public TValue this[TKey key] => dict[key];
 			public IEnumerable<TKey> Keys => dict.Keys;
 			public IEnumerable<TValue> Values => dict.Values;

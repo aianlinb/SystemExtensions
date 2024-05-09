@@ -1,5 +1,4 @@
-﻿using System.ComponentModel;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace SystemExtensions {
@@ -14,7 +13,7 @@ namespace SystemExtensions {
 			if (value < 0) // index.IsFromEnd
 				unchecked {
 					value += length + 1; // length - ~value == value + length + 1
-				} 
+				}
 			return value;
 		}
 
@@ -99,7 +98,7 @@ namespace SystemExtensions {
 		public static string ExpandPath(string path) {
 			if (OperatingSystem.IsWindows())
 				return Environment.ExpandEnvironmentVariables(path);
-			else if (path.StartsWith('~') && Environment.OSVersion.Platform == PlatformID.Unix) {
+			if (path.StartsWith('~') && Environment.OSVersion.Platform == PlatformID.Unix) {
 				if (path.Length == 1 || path[1] == Path.DirectorySeparatorChar || path.AsSpan(1).SequenceEqual(Environment.UserName)) { // "~" || "~/" || "~currentUsername"
 					var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
 					if (userProfile != "/") // When failed, it fallbacks to "/" in above line

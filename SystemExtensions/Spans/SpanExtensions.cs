@@ -438,10 +438,10 @@ namespace SystemExtensions.Spans {
 			nint byteOffset = Unsafe.ByteOffset(ref src, ref dst);
 			unchecked {
 				if (byteOffset != 0 &&
-	#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
+#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
 					((nuint)byteOffset < (nuint)((nint)source.Length * sizeof(T)) ||
 					 (nuint)byteOffset > (nuint)(-((nint)destination.Length * sizeof(T))))) {
-	#pragma warning restore CS8500
+#pragma warning restore CS8500
 					ThrowHelper.Throw<ArgumentException>("Source and destination span overlapped", nameof(destination));
 				}
 			}
@@ -624,7 +624,7 @@ namespace SystemExtensions.Spans {
 				index = i;
 				return true;
 
-		Spliting:
+			Spliting:
 				index = 0;
 				count = isAny ?
 					MemoryExtensions.SplitAny(source, ranges.AsSpan(), separator, options) :
@@ -650,7 +650,7 @@ namespace SystemExtensions.Spans {
 			/// </summary>
 			[InlineArray(stackAllocationLength)]
 			private struct Ranges {
-				public Range firstRange;
+				private Range firstRange;
 
 				[MethodImpl(MethodImplOptions.AggressiveInlining)]
 				public Span<Range> AsSpan() => MemoryMarshal.CreateSpan(ref firstRange, stackAllocationLength);
@@ -676,6 +676,7 @@ namespace SystemExtensions.Spans {
 
 			public T Current => memory.Span[index];
 			object? IEnumerator.Current => Current;
+
 			[MethodImpl(MethodImplOptions.AggressiveInlining)]
 			public bool MoveNext() {
 				var i = index + 1;

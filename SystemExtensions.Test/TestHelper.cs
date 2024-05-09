@@ -1,15 +1,18 @@
 ﻿global using System.Text;
+
 global using Microsoft.VisualStudio.TestTools.UnitTesting;
+
 global using SystemExtensions.Collections;
 global using SystemExtensions.Spans;
 global using SystemExtensions.Streams;
+
 global using static SystemExtensions.Tests.TestHelper;
 
 namespace SystemExtensions.Tests {
 	public static class TestHelper {
 		public static unsafe string NextString(this Random random, int length) {
 			var str = new string('\0', length);
-			fixed (char *p = str)
+			fixed (char* p = str)
 				for (int i = 0; i < length; ++i) {
 					char c;
 					do {

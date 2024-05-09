@@ -28,5 +28,37 @@ namespace SystemExtensions.Collections {
 					ref Unsafe.Add(ref MemoryMarshal.GetReference(span), index));
 			return result;
 		}
+
+		private sealed class ShadawList {
+#pragma warning disable CS8618 // Used as fields layout only
+			internal Array _items;
+			internal int _size;
+#pragma warning restore CS8618
+		}
+		/// <inheritdoc cref="AsList{T}(T[], int)"/>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static List<T> AsList<T>(this T[] array) => AsList(array, array.Length);
+		/// <summary>
+		/// Returns a <see cref="List{T}"/> that use <paramref name="array"/> as its base array.
+		/// </summary>
+		/// <param name="array">Base array of the list</param>
+		/// <param name="count">
+		/// Element count of the list. (&lt;= <paramref name="array"/>.Length)<br />
+		/// Don't store instances in <paramref name="array"/> outside of this range if <typeparamref name="T"/> is a reference type,
+		/// otherwise they won't be collected by GC until they are overwritten.
+		/// </param>
+		/// <remarks>
+		/// Note that the base array will be changed when <see cref="List{T}.Capacity"/> is changed.
+		/// </remarks>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static List<T> AsList<T>(this T[] array, int count) {
+			ArgumentNullException.ThrowIfNull(array);
+			ArgumentOutOfRangeException.ThrowIfGreaterThan(unchecked((uint)count), (uint)array.Length);
+
+			var result = Unsafe.As<ShadawList>(RuntimeHelpers.GetUninitializedObject(typeof(List<T>)));
+			result._items = array;
+			result._size = count;
+			return Unsafe.As<List<T>>(result);
+		}
 	}
 }

@@ -1,5 +1,4 @@
 ﻿using System.Buffers;
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -155,7 +154,7 @@ namespace SystemExtensions.Tests {
 			list.EnsureCapacity(cap1);
 			Assert.IsTrue(cap1 <= list.Capacity);
 			list.EnsureCapacity(cap2);
-			Assert.IsTrue(cap1 <= list.Capacity &&cap2 <= list.Capacity);
+			Assert.IsTrue(cap1 <= list.Capacity && cap2 <= list.Capacity);
 			list.EnsureCapacity(cap3);
 			Assert.IsTrue(cap1 <= list.Capacity && cap2 <= list.Capacity && cap3 <= list.Capacity);
 		}

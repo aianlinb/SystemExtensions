@@ -1,4 +1,6 @@
-﻿namespace SystemExtensions.Tests {
+﻿using System.Runtime.InteropServices;
+
+namespace SystemExtensions.Tests {
 	[TestClass]
 	public class ArrayExtensionsTests {
 		private static readonly int[] array = { 1, 2, 3, 4, 5 };
@@ -50,6 +52,28 @@
 
 			// Assert
 			CollectionAssert.AreEqual(expected, result);
+		}
+
+		[TestMethod]
+		[DataRow(-1)]
+		[DataRow(0)]
+		[DataRow(5)]
+		[DataRow(7)]
+		public void AsList_Test(int count) {
+			// Act
+			if (count < 0 || count > array.Length) {
+				Assert.ThrowsException<ArgumentOutOfRangeException>(() => array.AsList(count));
+				return;
+			}
+			var result = array.AsList(count);
+
+			// Assert
+			if (count != 0) {
+				Assert.IsTrue(CollectionsMarshal.AsSpan(result).Overlaps(new(array, 0, count), out var offset));
+				Assert.AreEqual(0, offset);
+			} else // count == 0
+				Assert.AreEqual(0, result.Count);
+			Assert.AreEqual(array.Length, result.Capacity);
 		}
 	}
 }

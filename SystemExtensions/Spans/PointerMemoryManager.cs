@@ -10,7 +10,8 @@ namespace SystemExtensions.Spans {
 		protected readonly int length;
 
 		/// <remarks>
-		/// The lifetime of this object must not be longer than the given <paramref name="pointer"/>
+		/// The lifetime of this object must not be longer than the given <paramref name="pointer"/>.
+		/// <para>The <paramref name="pointer"/> is assumed to have been fixed.</para>
 		/// </remarks>
 		public PointerMemoryManager(T* pointer, int length) {
 			ArgumentOutOfRangeException.ThrowIfNegative(length);

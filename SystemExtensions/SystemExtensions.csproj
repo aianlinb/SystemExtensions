@@ -10,7 +10,7 @@
 	</PropertyGroup>
 
 	<PropertyGroup Label="PackageInfo">
-		<Version>1.3.0</Version>
+		<Version>1.4.0</Version>
 		<Authors>aianlinb</Authors>
 		<Copyright>Copyright © 2024 aianlinb</Copyright>
 		<Description>Library with useful high-performance methods for Span/Stream/List etc...</Description>
@@ -18,10 +18,9 @@
 		<PackageProjectUrl>https://github.com/$(Authors)/$(AssemblyName)</PackageProjectUrl>
 		<PackageTags>$(AssemblyName);Span;Stream;Memory;Extension;Performance;IO;System</PackageTags>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
-		<PackageLicenseFile>LICENSE</PackageLicenseFile>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
 		<RepositoryUrl>$(PackageProjectUrl)</RepositoryUrl>
-		<PublishRepositoryUrl>true</PublishRepositoryUrl>
 		<IncludeSymbols>true</IncludeSymbols>
 		<IncludeSource>true</IncludeSource>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
@@ -36,7 +35,6 @@
 
 	<ItemGroup>
 		<None Include="$(SolutionDir)README.md" Pack="true" PackagePath="/" Visible="false" />
-		<None Include="$(SolutionDir)LICENSE" Pack="true" PackagePath="/" Visible="false" />
 		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="*" PrivateAssets="All" />
 	</ItemGroup>
 

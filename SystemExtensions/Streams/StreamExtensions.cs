@@ -2,7 +2,6 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-using SystemExtensions.Collections;
 using SystemExtensions.Spans;
 
 namespace SystemExtensions.Streams {
@@ -23,6 +22,18 @@ namespace SystemExtensions.Streams {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static void ReadExactlyCore<T>(Stream stream, scoped ref T reference, int lengthInBytes) where T : unmanaged {
 			stream.ReadExactly(MemoryMarshal.CreateSpan(ref Unsafe.As<T, byte>(ref reference), lengthInBytes));
+		}
+
+		/// <summary>
+		/// Dangerous write <typeparamref name="T"/> with <paramref name="lengthInBytes"/> in bytes from the memory start from <paramref name="reference"/> to <paramref name="stream"/>
+		/// </summary>
+		/// <remarks>
+		/// The caller must ensure that the memory access to the <paramref name="reference"/> with <paramref name="lengthInBytes"/> is legal
+		/// </remarks>
+		/// <exception cref="EndOfStreamException"/>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		private static void WriteCore<T>(Stream stream, scoped ref readonly T reference, int lengthInBytes) where T : unmanaged {
+			stream.Write(MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<T, byte>(ref Unsafe.AsRef(in reference)), lengthInBytes));
 		}
 
 		private static readonly SpanAction<char, Stream> createStringAction = static (Span<char> span, Stream stream) => Read(stream, span);
@@ -55,13 +66,13 @@ namespace SystemExtensions.Streams {
 		/// <exception cref="EndOfStreamException"/>
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static unsafe void Read<T>(this Stream stream, T[] array) where T : unmanaged { // T is not byte
-			//Read(stream, array.AsSpan());
+																							   //Read(stream, array.AsSpan());
 			ReadExactlyCore(stream, ref MemoryMarshal.GetArrayDataReference(array), checked(sizeof(T) * array.Length));
 		}
 		/// <exception cref="EndOfStreamException"/>
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static unsafe void Read<T>(this Stream stream, scoped Span<T> span) where T : unmanaged { // T is not byte
-			//stream.ReadExactly(MemoryMarshal.AsBytes(span));
+																										 //stream.ReadExactly(MemoryMarshal.AsBytes(span));
 			ReadExactlyCore(stream, ref MemoryMarshal.GetReference(span), checked(sizeof(T) * span.Length));
 		}
 		/// <exception cref="EndOfStreamException"/>
@@ -103,18 +114,6 @@ namespace SystemExtensions.Streams {
 		}
 
 		/// <summary>
-		/// Dangerous write <typeparamref name="T"/> with <paramref name="lengthInBytes"/> in bytes from the memory start from <paramref name="reference"/> to <paramref name="stream"/>
-		/// </summary>
-		/// <remarks>
-		/// The caller must ensure that the memory access to the <paramref name="reference"/> with <paramref name="lengthInBytes"/> is legal
-		/// </remarks>
-		/// <exception cref="EndOfStreamException"/>
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private static void Write<T>(this Stream stream, scoped ref readonly T reference, int lengthInBytes) where T : unmanaged {
-			stream.Write(MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<T, byte>(ref Unsafe.AsRef(in reference)), lengthInBytes));
-		}
-
-		/// <summary>
 		/// Write <paramref name="str"/> as an UTF-16 string to the <paramref name="stream"/>
 		/// </summary>
 		/// <exception cref="EndOfStreamException"/>
@@ -122,28 +121,28 @@ namespace SystemExtensions.Streams {
 		public static void Write(this Stream stream, string str) {
 			/*fixed (char* p = str)
 				stream.Write(new ReadOnlySpan<byte>(p, str.Length * 2));*/
-			Write(stream, ref Unsafe.AsRef(in str.GetPinnableReference()), checked(str.Length << 1));
+			WriteCore(stream, ref Unsafe.AsRef(in str.GetPinnableReference()), checked(str.Length << 1));
 		}
 		/// <exception cref="EndOfStreamException"/>
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static unsafe void Write<T>(this Stream stream, scoped in T value) where T : unmanaged {
 			/*fixed (T* p = &value)
 				stream.Write(new ReadOnlySpan<byte>(p, sizeof(T)));*/
-			Write(stream, ref Unsafe.AsRef(in value), sizeof(T));
+			WriteCore(stream, ref Unsafe.AsRef(in value), sizeof(T));
 		}
 		/// <exception cref="EndOfStreamException"/>
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static unsafe void Write<T>(this Stream stream, T[] array) where T : unmanaged { // T is not byte
 			/*fixed (T* p = array)
 				stream.Write(new ReadOnlySpan<byte>(p, array.Length * sizeof(T)));*/
-			Write(stream, ref MemoryMarshal.GetArrayDataReference(array), checked(sizeof(T) * array.Length));
+			WriteCore(stream, ref MemoryMarshal.GetArrayDataReference(array), checked(sizeof(T) * array.Length));
 		}
 		/// <exception cref="EndOfStreamException"/>
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static unsafe void Write<T>(this Stream stream, scoped ReadOnlySpan<T> span) where T : unmanaged { // T is not byte
 			/*fixed (T* p = span)
 				stream.Write(new ReadOnlySpan<byte>(p, span.Length * sizeof(T)));*/
-			Write(stream, ref MemoryMarshal.GetReference(span), checked(sizeof(T) * span.Length));
+			WriteCore(stream, ref MemoryMarshal.GetReference(span), checked(sizeof(T) * span.Length));
 		}
 		/// <exception cref="EndOfStreamException"/>
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]

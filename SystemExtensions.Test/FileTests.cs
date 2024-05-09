@@ -35,7 +35,7 @@
 				System.IO.File.Delete(path);
 			}
 		}
-		
+
 		[TestMethod]
 		public void WriteAllBytes_Test() {
 			// Arrange
