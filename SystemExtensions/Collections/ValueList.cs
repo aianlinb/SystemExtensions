@@ -14,13 +14,14 @@ namespace SystemExtensions.Collections {
 	/// If the buffer isn't provided to the constructor, or if the capacity grows after that,
 	/// make sure to call <see cref="Dispose"/> to return the buffer to the <see cref="ArrayPool{T}"/>
 	/// </remarks>
-	public ref struct ValueList<T> { // TODO: Analyzer to prevent from copying
+	public ref struct ValueList<T> {
 		public static ValueList<T> Empty => new([]);
 
 		private T[]? rentedBuffer;
 		private Span<T> Buffer;
-		private ref T[]? self;
 		public int Count { readonly get; private set; }
+		private ref T[]? self;
+
 		public readonly int Capacity => Buffer.Length;
 
 		public readonly T this[int index] {
@@ -36,7 +37,7 @@ namespace SystemExtensions.Collections {
 		/// The number of items in <paramref name="initialBuffer"/> that are already in use.
 		/// </param>
 		public ValueList(Span<T> initialBuffer, int initialCount = 0) {
-			ArgumentOutOfRangeException.ThrowIfGreaterThan((uint)initialCount, (uint)initialBuffer.Length);
+			ArgumentOutOfRangeException.ThrowIfGreaterThan(unchecked((uint)initialCount), (uint)initialBuffer.Length, nameof(initialCount));
 			Buffer = initialBuffer;
 			Count = initialCount;
 			self = ref Unsafe.AsRef(in rentedBuffer);
@@ -75,26 +76,29 @@ namespace SystemExtensions.Collections {
 				AddRange(MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<char, T>(ref Unsafe.AsRef(in str.GetPinnableReference())), str.Length));
 				return;
 			}
-			if (rentedBuffer is not null && collection is ICollection<T> c) {
-				EnsureRemainingCapacity(c.Count);
-				c.CopyTo(rentedBuffer, Count);
-				Count += c.Count;
-				return;
-			}
-			if (collection is List<T> list) {
-				EnsureRemainingCapacity(list.Count);
-				list.CopyTo(Buffer[Count..]);
-				Count += list.Count;
-				return;
-			}
-			if (collection is T[] array) {
-				AddRange(new ReadOnlySpan<T>(array));
-				return;
+			if (rentedBuffer is not null) {
+				if (collection is ICollection<T> c) {
+					EnsureRemainingCapacity(c.Count);
+					c.CopyTo(rentedBuffer, Count);
+					Count += c.Count;
+					return;
+				}
+			} else {
+				if (collection is List<T> list) {
+					EnsureRemainingCapacity(list.Count);
+					list.CopyTo(Buffer[Count..]);
+					Count += list.Count;
+					return;
+				}
+				if (collection is T[] array) {
+					AddRange(new ReadOnlySpan<T>(array));
+					return;
+				}
 			}
 			if (collection.TryGetNonEnumeratedCount(out var count))
 				EnsureRemainingCapacity(count);
 
-			using IEnumerator<T> en = collection.GetEnumerator();
+			using var en = collection.GetEnumerator();
 			while (en.MoveNext())
 				Add(en.Current);
 		}
@@ -236,6 +240,15 @@ namespace SystemExtensions.Collections {
 				AsSpan().Clear();
 			Count = 0;
 		}
+
+		/// <inheritdoc cref="MemoryExtensions.BinarySearch{T, TComparable}(ReadOnlySpan{T}, TComparable)"/>
+		public readonly int BinarySearch<TComparable>(TComparable comparable) where TComparable : IComparable<T> => AsReadOnlySpan().BinarySearch(comparable);
+		/// <inheritdoc cref="MemoryExtensions.BinarySearch{T, TComparer}(ReadOnlySpan{T}, TComparer)"/>
+		public readonly int BinarySearch<TComparer>(T value, TComparer comparer) where TComparer : IComparer<T> => AsReadOnlySpan().BinarySearch(value, comparer);
+		/// <inheritdoc cref="MemoryExtensions.Sort{T}(Span{T})"/>
+		public readonly void Sort() => AsSpan().Sort();
+		/// <inheritdoc cref="MemoryExtensions.Sort{T, TComparer}(Span{T}, TComparer)"/>
+		public readonly void Sort<TComparer>(TComparer comparer) where TComparer : IComparer<T> => AsSpan().Sort(comparer);
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public void Dispose() {

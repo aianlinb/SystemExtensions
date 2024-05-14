@@ -18,6 +18,67 @@ namespace SystemExtensions.Tests {
 		public void AsWritable_MemoryTest() => Assert.AreEqual(new Memory<int>(array), new ReadOnlyMemory<int>(array).AsWritable());
 
 		[TestMethod]
+		public void ReadAndSlice_Test() {
+			// Arrange
+			var input = new byte[6];
+			Random.Shared.NextBytes(input);
+			var span = new ReadOnlySpan<byte>(input);
+			var spanSnapshot = span;
+
+			// Act
+			int actual = span.ReadAndSlice<int>();
+
+			// Assert
+			Assert.AreEqual(MemoryMarshal.Read<int>(input), actual);
+			Assert.IsTrue(span == spanSnapshot[sizeof(int)..]);
+		}
+		[TestMethod]
+		public void WriteAndSlice_Test() {
+			// Arrange
+			var output = new byte[5];
+			int expected = Random.Shared.Next();
+			var span = new Span<byte>(output);
+			var spanSnapshot = span;
+
+			// Act
+			span.WriteAndSlice(expected);
+
+			// Assert
+			Assert.AreEqual(expected, MemoryMarshal.Read<int>(output));
+			Assert.IsTrue(span == spanSnapshot[sizeof(int)..]);
+		}
+		[TestMethod]
+		[DataRow(-1)]
+		[DataRow(0)]
+		[DataRow(3)]
+		[DataRow(5)]
+		[DataRow(7)]
+		public void CopyToAndSlice_Test(int length) {
+			// Arrange
+			var input = new byte[5];
+			var output = new byte[10];
+			Random.Shared.NextBytes(input);
+			var span1 = new ReadOnlySpan<byte>(input);
+			var span2 = new Span<byte>(output);
+			var span1Snapshot = span1;
+			var span2Snapshot = span2;
+
+			// Act
+			try {
+				span1.CopyToAndSlice(ref span2, length);
+			} catch (ArgumentOutOfRangeException) {
+				Assert.IsTrue(length < 0 || length > input.Length);
+				return;
+			}
+			Assert.IsTrue(length >= 0 && length <= input.Length);
+
+			// Assert
+			Assert.IsTrue(span1Snapshot[..length].SequenceEqual(span2Snapshot[..length]));
+			Assert.IsTrue(span1 == span1Snapshot[length..]);
+			Assert.IsTrue(span2 == span2Snapshot[length..]);
+		}
+
+		[TestMethod]
 		[DataRow(0, 4)]
 		[DataRow(0, 0)]
 		[DataRow(4, 0)]

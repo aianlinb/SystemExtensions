@@ -50,6 +50,7 @@ namespace SystemExtensions {
 		/// When using C# 10 and above, the <paramref name="paramName"/> will be set to the expression passed to <paramref name="actualValue"/> if not provided.
 		/// See <see cref="CallerArgumentExpressionAttribute"/>.
 		/// </remarks>
+		[MethodImpl(MethodImplOptions.NoInlining)]
 		public static ArgumentOutOfRangeException ArgumentOutOfRange(object? actualValue, string? message = null, [CallerArgumentExpression(nameof(actualValue))] string? paramName = null) => new(paramName, actualValue, message);
 
 		/// <summary>

@@ -1,6 +1,50 @@
-﻿namespace SystemExtensions.Tests {
+﻿using System.Buffers.Binary;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+
+namespace SystemExtensions.Tests {
 	[TestClass]
 	public class UtilsTests {
+		[TestMethod]
+		public void ReverseBytes_Test() {
+			unchecked {
+				// Arrange
+				byte b = (byte)Random.Shared.Next();
+				short s = (short)Random.Shared.Next();
+				int i = Random.Shared.Next();
+				long l = Random.Shared.NextInt64();
+				Int128 ll = new((ulong)Random.Shared.NextInt64(), (ulong)Random.Shared.NextInt64());
+				KeyValuePair<Vector256<uint>, Vector256<long>> kvp = new();
+				Random.Shared.NextBytes(MemoryMarshal.AsBytes<KeyValuePair<Vector256<uint>, Vector256<long>>>(new(ref kvp)));
+
+				// Snapshots
+				var b2 = b;
+				var s2 = s;
+				var i2 = i;
+				var l2 = l;
+				var ll2 = ll;
+				var kvp2 = kvp;
+
+				// Act
+				Utils.ReverseBytes(ref b);
+				Utils.ReverseBytes(ref s);
+                Utils.ReverseBytes(ref i);
+				Utils.ReverseBytes(ref l);
+				Utils.ReverseBytes(ref ll);
+				Utils.ReverseBytes(ref kvp);
+
+				// Assert
+				Assert.AreEqual(BinaryPrimitives.ReverseEndianness(b2), b);
+				Assert.AreEqual(BinaryPrimitives.ReverseEndianness(s2), s);
+				Assert.AreEqual(BinaryPrimitives.ReverseEndianness(s2), s);
+				Assert.AreEqual(BinaryPrimitives.ReverseEndianness(i2), i);
+				Assert.AreEqual(BinaryPrimitives.ReverseEndianness(l2), l);
+				Assert.AreEqual(BinaryPrimitives.ReverseEndianness(ll2), ll);
+				MemoryMarshal.AsBytes<KeyValuePair<Vector256<uint>, Vector256<long>>>(new(ref kvp)).Reverse();
+				Assert.AreEqual(kvp2, kvp);
+			}
+		}
+
 		private static readonly Range[] ranges = [default, Range.All, ^0..^0, 40..^41, 5.., (..3)];
 
 		[TestMethod]

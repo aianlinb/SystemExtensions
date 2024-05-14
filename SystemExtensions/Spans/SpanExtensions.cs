@@ -15,12 +15,43 @@ namespace SystemExtensions.Spans {
 		public static ReadOnlyMemory<T> AsReadOnly<T>(this Memory<T> memory) => memory;
 		public static ReadOnlySpan<T> AsReadOnlySpan<T>(this T[] array) => array;
 		public static ReadOnlyMemory<T> AsReadOnlyMemory<T>(this T[] array) => array;
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static Span<T> AsWritable<T>(this ReadOnlySpan<T> span) => MemoryMarshal.CreateSpan(ref MemoryMarshal.GetReference(span), span.Length);
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static Memory<T> AsWritable<T>(this ReadOnlyMemory<T> memory) => MemoryMarshal.AsMemory(memory);
+
+		public static unsafe T ReadAndSlice<T>(this scoped ref ReadOnlySpan<byte> source) where T : unmanaged {
+			ref var p = ref MemoryMarshal.GetReference(source);
+			source = source[sizeof(T)..]; // range check here
+			return Unsafe.As<byte, T>(ref p);
+		}
+		public static unsafe void WriteAndSlice<T>(this scoped ref Span<byte> source, T value) where T : unmanaged {
+			ref var p = ref MemoryMarshal.GetReference(source);
+			source = source[sizeof(T)..]; // range check here
+			Unsafe.As<byte, T>(ref p) = value;
+		}
+		public static unsafe void CopyToAndSlice<T>(this scoped ref ReadOnlySpan<T> source, scoped ref Span<T> destination, int length) where T : unmanaged {
+			ref var p = ref MemoryMarshal.GetReference(source);
+			ref var p2 = ref MemoryMarshal.GetReference(destination);
+			source = source[length..]; // range check here
+			destination = destination[length..]; // and here
+			MemoryMarshal.CreateReadOnlySpan(ref p, length).CopyToUnchecked(ref p2);
+		}
 
 		#region Unsafe
+		/// <remarks>
+		/// <para>This method is not always safe, please make sure the target memory is suitable for <typeparamref name="T"/>.</para>
+		/// For example, if the <paramref name="span"/> is created from a <see cref="string"/>[], and the <typeparamref name="T"/> is <see cref="object"/>.<br />
+		/// The returned <see cref="Span{T}"/> will accept writing any object like <see cref="List{T}"/> or <see cref="Stream"/> to the source <see cref="string"/>[].<br />
+		/// And it will produce undefined behavior
+		/// </remarks>
+		[EditorBrowsable(EditorBrowsableState.Advanced)]
+		public static Span<T> AsWritable<T>(this ReadOnlySpan<T> span) => MemoryMarshal.CreateSpan(ref MemoryMarshal.GetReference(span), span.Length);
+		/// <remarks>
+		/// <para>This method is not always safe, please make sure the target memory is suitable for <typeparamref name="T"/>.</para>
+		/// For example, if the <paramref name="memory"/> is created from a <see cref="string"/>[], and the <typeparamref name="T"/> is <see cref="object"/>.<br />
+		/// The returned <see cref="Span{T}"/> will accept writing any object like <see cref="List{T}"/> or <see cref="Stream"/> to the source <see cref="string"/>[].<br />
+		/// And it will produce undefined behavior
+		/// </remarks>
+		[EditorBrowsable(EditorBrowsableState.Advanced)]
+		public static Memory<T> AsWritable<T>(this ReadOnlyMemory<T> memory) => MemoryMarshal.AsMemory(memory);
+
 		/// <summary>
 		/// <see cref="Span{T}.Slice(int)"/> without bounds checking
 		/// </summary>
@@ -544,15 +575,15 @@ namespace SystemExtensions.Spans {
 		}
 		#endregion MemoryExtensions
 
-		public static bool Any<T>(this ReadOnlySpan<T> span, Predicate<T> predicate) {
-			foreach (var item in span)
+		public static bool Any<T>(this scoped ReadOnlySpan<T> source, Predicate<T> predicate) {
+			foreach (var item in source)
 				if (predicate(item))
 					return true;
 			return false;
 		}
 
-		public static bool All<T>(this ReadOnlySpan<T> span, Predicate<T> predicate) {
-			foreach (var item in span)
+		public static bool All<T>(this scoped ReadOnlySpan<T> source, Predicate<T> predicate) {
+			foreach (var item in source)
 				if (!predicate(item))
 					return false;
 			return true;

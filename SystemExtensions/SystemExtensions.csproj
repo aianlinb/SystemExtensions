@@ -10,7 +10,7 @@
 	</PropertyGroup>
 
 	<PropertyGroup Label="PackageInfo">
-		<Version>1.4.0</Version>
+		<Version>1.5.0</Version>
 		<Authors>aianlinb</Authors>
 		<Copyright>Copyright © 2024 aianlinb</Copyright>
 		<Description>Library with useful high-performance methods for Span/Stream/List etc...</Description>

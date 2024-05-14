@@ -53,7 +53,7 @@ namespace SystemExtensions.Collections {
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static List<T> AsList<T>(this T[] array, int count) {
 			ArgumentNullException.ThrowIfNull(array);
-			ArgumentOutOfRangeException.ThrowIfGreaterThan(unchecked((uint)count), (uint)array.Length);
+			ArgumentOutOfRangeException.ThrowIfGreaterThan(unchecked((uint)count), (uint)array.Length, nameof(count));
 
 			var result = Unsafe.As<ShadawList>(RuntimeHelpers.GetUninitializedObject(typeof(List<T>)));
 			result._items = array;

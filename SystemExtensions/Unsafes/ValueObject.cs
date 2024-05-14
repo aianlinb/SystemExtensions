@@ -1,5 +1,6 @@
 ﻿extern alias corelib;
 
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
@@ -22,6 +23,7 @@ namespace SystemExtensions.Unsafes {
 	/// <para>The destructor <see cref="object.Finalize"/> of the object won't be called cause that it's not managed by GC.</para>
 	/// <para>This class is experimental and may not work as expected.</para>
 	/// </remarks>
+	[EditorBrowsable(EditorBrowsableState.Advanced)]
 	public static unsafe class ValueObject {
 		[StructLayout(LayoutKind.Explicit)]
 		private readonly struct MethodTable { // Subset of src/vm/methodtable.h

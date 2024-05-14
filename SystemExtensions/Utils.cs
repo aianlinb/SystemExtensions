@@ -1,8 +1,71 @@
-﻿using System.Diagnostics;
+﻿using System.Buffers.Binary;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace SystemExtensions {
+	/// <summary>
+	/// Miscellaneous or not yet classified methods
+	/// </summary>
 	public static class Utils {
+		/// <summary>
+		/// Calls <see cref="ReverseBytes"/> if the current architecture is big-endian.
+		/// </summary>
+		/// <returns>
+		/// Whether the endianness is reversed.<br />
+		/// Equivalent to !<see cref="BitConverter.IsLittleEndian"/>.
+		/// </returns>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static unsafe bool EnsureLittleEndian<T>(ref T value) where T : unmanaged {
+			// All if and switch statements here are optimized out by JIT
+			if (BitConverter.IsLittleEndian)
+				return false;
+			ReverseBytes(ref value);
+			return true;
+		}
+		/// <summary>
+		/// Calls <see cref="ReverseBytes"/> if the current architecture is little-endian.
+		/// </summary>
+		/// <returns>
+		/// Whether the endianness is reversed.<br />
+		/// Equivalent to <see cref="BitConverter.IsLittleEndian"/>.
+		/// </returns>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static unsafe bool EnsureBigEndian<T>(ref T value) where T : unmanaged {
+			// All if and switch statements here are optimized out by JIT
+			if (!BitConverter.IsLittleEndian)
+				return false;
+			ReverseBytes(ref value);
+			return true;
+		}
+
+		/// <summary>
+		/// Reverses the bytes of <paramref name="value"/> on memory.<br />
+		/// Likes what <see cref="MemoryExtensions.Reverse"/> does on Span&lt;byte&gt;.
+		/// </summary>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static unsafe void ReverseBytes<T>(ref T value) where T : unmanaged {
+			if (sizeof(T) is sizeof(ushort) or sizeof(uint) or sizeof(ulong) or sizeof(ulong) * 2/*sizeof(UInt128)*/) {
+				Unsafe.SkipInit(out T result);
+				switch (sizeof(T)) {
+					case sizeof(ushort):
+						Unsafe.As<T, ushort>(ref result) = BinaryPrimitives.ReverseEndianness(Unsafe.As<T, ushort>(ref value));
+						break;
+					case sizeof(uint):
+						Unsafe.As<T, uint>(ref result) = BinaryPrimitives.ReverseEndianness(Unsafe.As<T, uint>(ref value));
+						break;
+					case sizeof(ulong):
+						Unsafe.As<T, ulong>(ref result) = BinaryPrimitives.ReverseEndianness(Unsafe.As<T, ulong>(ref value));
+						break;
+					case sizeof(ulong) * 2/*sizeof(UInt128)*/:
+						Unsafe.As<T, UInt128>(ref result) = BinaryPrimitives.ReverseEndianness(Unsafe.As<T, UInt128>(ref value));
+						break;
+				}
+				value = result;
+			} else if (sizeof(T) != sizeof(byte))
+				MemoryMarshal.CreateSpan(ref Unsafe.As<T, byte>(ref value), sizeof(T)).Reverse();
+		}
+
 		/// <summary>
 		/// <see cref="Index.GetOffset"/> but with <see cref="long"/> <paramref name="length"/>
 		/// </summary>
@@ -100,8 +163,8 @@ namespace SystemExtensions {
 				return Environment.ExpandEnvironmentVariables(path);
 			if (path.StartsWith('~') && Environment.OSVersion.Platform == PlatformID.Unix) {
 				if (path.Length == 1 || path[1] == Path.DirectorySeparatorChar || path.AsSpan(1).SequenceEqual(Environment.UserName)) { // "~" || "~/" || "~currentUsername"
-					var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-					if (userProfile != "/") // When failed, it fallbacks to "/" in above line
+					var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile); // When failed, fallbacks to "/"
+					if (userProfile != "/")
 						return string.Concat(userProfile, path.AsSpan(1));
 				} else if (path[1] == '+') {
 					if (path.Length == 2 || path[2] == Path.DirectorySeparatorChar) // "~+" || "~+/"
