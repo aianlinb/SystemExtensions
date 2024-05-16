@@ -45,7 +45,7 @@ namespace SystemExtensions {
 
 				var bytesRead = 0;
 				while (bytesRead < bytes.Length) {
-					var l = await RandomAccess.ReadAtOffsetAsync(sfh, bytes[bytesRead..], bytesRead, cancellationToken).ConfigureAwait(false);
+					var l = await RandomAccess.ReadAtOffsetAsync(sfh, bytes.Slice(bytesRead), bytesRead, cancellationToken).ConfigureAwait(false);
 					bytesRead += l;
 					if (l == 0)
 						break;

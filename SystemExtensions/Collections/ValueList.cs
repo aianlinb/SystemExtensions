@@ -1,4 +1,5 @@
-﻿using System.Buffers;
+﻿using System;
+using System.Buffers;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -86,7 +87,7 @@ namespace SystemExtensions.Collections {
 			} else {
 				if (collection is List<T> list) {
 					EnsureRemainingCapacity(list.Count);
-					list.CopyTo(Buffer[Count..]);
+					list.CopyTo(Buffer.Slice(Count));
 					Count += list.Count;
 					return;
 				}
@@ -107,26 +108,30 @@ namespace SystemExtensions.Collections {
 		private void EnsureRemainingCapacity(int capacity) {
 			EnsureCapacity(Count + capacity);
 		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public void EnsureCapacity(int capacity) {
-			if (capacity > Capacity) {
-				if (!Unsafe.AreSame(ref self, ref rentedBuffer))
-					ThrowHelper.Throw<InvalidOperationException>("A copy of ValueList<T> is detected, this type can only be passed by reference");
-				var newBuffer = ArrayPool<T>.Shared.Rent(capacity);
-				AsReadOnlySpan().CopyTo(newBuffer);
-				Buffer = newBuffer;
-				if (rentedBuffer is not null)
-					ArrayPool<T>.Shared.Return(rentedBuffer);
-				rentedBuffer = newBuffer;
-			}
+			if (capacity > Capacity)
+				Grow(capacity);
+		}
+		[MethodImpl(MethodImplOptions.NoInlining)] // Uncommon path
+		private void Grow(int capacity) {
+			if (!Unsafe.AreSame(ref self, ref rentedBuffer))
+				ThrowHelper.Throw<InvalidOperationException>("A copy of ValueList<T> is detected, this type can only be passed by reference");
+			var newBuffer = ArrayPool<T>.Shared.Rent(capacity);
+			AsReadOnlySpan().CopyTo(newBuffer);
+			Buffer = newBuffer;
+			if (rentedBuffer is not null)
+				ArrayPool<T>.Shared.Return(rentedBuffer);
+			rentedBuffer = newBuffer;
 		}
 
 		public readonly ReadOnlySpan<T>.Enumerator GetEnumerator() => AsReadOnlySpan().GetEnumerator();
 
 		public readonly Span<T> AsSpan() => MemoryMarshal.CreateSpan(ref GetPinnableReference(), Count); // Skip bounds check
-		public readonly Span<T> AsSpan(int index) => AsSpan()[index..];
+		public readonly Span<T> AsSpan(int index) => AsSpan().Slice(index);
 		public readonly Span<T> AsSpan(int index, int length) => AsSpan().Slice(index, length);
 		public readonly ReadOnlySpan<T> AsReadOnlySpan() => MemoryMarshal.CreateReadOnlySpan(ref GetPinnableReference(), Count); // Skip bounds check
-		public readonly ReadOnlySpan<T> AsReadOnlySpan(int index) => AsReadOnlySpan()[index..];
+		public readonly ReadOnlySpan<T> AsReadOnlySpan(int index) => AsReadOnlySpan().Slice(index);
 		public readonly ReadOnlySpan<T> AsReadOnlySpan(int index, int length) => AsReadOnlySpan().Slice(index, length);
 
 		public readonly bool Contains(T item) => Count != 0 && IndexOf(item) >= 0;

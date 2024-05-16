@@ -18,21 +18,24 @@ namespace SystemExtensions.Spans {
 
 		public static unsafe T ReadAndSlice<T>(this scoped ref ReadOnlySpan<byte> source) where T : unmanaged {
 			ref var p = ref MemoryMarshal.GetReference(source);
-			source = source[sizeof(T)..]; // range check here
+			source = source.Slice(sizeof(T)); // range check here
 			return Unsafe.As<byte, T>(ref p);
 		}
 		public static unsafe void WriteAndSlice<T>(this scoped ref Span<byte> source, T value) where T : unmanaged {
 			ref var p = ref MemoryMarshal.GetReference(source);
-			source = source[sizeof(T)..]; // range check here
+			source = source.Slice(sizeof(T)); // range check here
 			Unsafe.As<byte, T>(ref p) = value;
 		}
 		public static unsafe void CopyToAndSlice<T>(this scoped ref ReadOnlySpan<T> source, scoped ref Span<T> destination, int length) where T : unmanaged {
 			ref var p = ref MemoryMarshal.GetReference(source);
 			ref var p2 = ref MemoryMarshal.GetReference(destination);
-			source = source[length..]; // range check here
-			destination = destination[length..]; // and here
+			source = source.Slice(length); // range check here
+			destination = destination.Slice(length); // and here
 			MemoryMarshal.CreateReadOnlySpan(ref p, length).CopyToUnchecked(ref p2);
 		}
+
+		public static unsafe Span<byte> AsSpan<T>(this ref T value) where T : unmanaged
+			=> MemoryMarshal.CreateSpan(ref Unsafe.As<T, byte>(ref value), sizeof(T));
 
 		#region Unsafe
 		/// <remarks>
@@ -567,7 +570,7 @@ namespace SystemExtensions.Spans {
 					int count = 0;
 					int pos;
 					while ((pos = IndexOf(span, value)) >= 0) {
-						span = span[(pos + value.Length)..];
+						span = span.Slice(pos + value.Length);
 						count++;
 					}
 					return count;

@@ -100,9 +100,8 @@ namespace SystemExtensions.Streams {
 		/// If the <paramref name="offset"/> is greater than the <see cref="Stream.Position"/> of the <see cref="BaseStream"/>,
 		/// this will seek the <see cref="BaseStream"/> to the <paramref name="offset"/>, or throw if not <see cref="Stream.CanSeek"/>.
 		/// </remarks>
-		/// <returns><see langword="this"/></returns>
-		public SubStream Rescope(long offset, long length) {
-			if (offset < 0 || offset > BaseStream.Length)
+		public void Rescope(long offset, long length) {
+			if ((ulong)offset > (ulong)BaseStream.Length)
 				ThrowHelper.ThrowArgumentOutOfRange(offset);
 			var endPos = offset + length;
 			if (length < 0 || endPos > _baseStream.Length)
@@ -113,8 +112,6 @@ namespace SystemExtensions.Streams {
 
 			if (_baseStream.Position < offset)
 				_baseStream.Position = offset; // throw if not seekable
-
-			return this;
 		}
 
 		/// <summary>
