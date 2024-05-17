@@ -16,16 +16,28 @@ namespace SystemExtensions.Spans {
 		public static ReadOnlySpan<T> AsReadOnlySpan<T>(this T[] array) => array;
 		public static ReadOnlyMemory<T> AsReadOnlyMemory<T>(this T[] array) => array;
 
+		/// <summary>
+		/// Reads a value of type <typeparamref name="T"/> from the <paramref name="source"/>
+		/// and advances the <paramref name="source"/> by <see langword="sizeof"/>(<typeparamref name="T"/>).
+		/// </summary>
 		public static unsafe T ReadAndSlice<T>(this scoped ref ReadOnlySpan<byte> source) where T : unmanaged {
 			ref var p = ref MemoryMarshal.GetReference(source);
 			source = source.Slice(sizeof(T)); // range check here
 			return Unsafe.As<byte, T>(ref p);
 		}
+		/// <summary>
+		/// Writes a <paramref name="value"/> to the <paramref name="source"/>
+		/// and advances the <paramref name="source"/> by <see langword="sizeof"/>(<typeparamref name="T"/>).
+		/// </summary>
 		public static unsafe void WriteAndSlice<T>(this scoped ref Span<byte> source, T value) where T : unmanaged {
-			ref var p = ref MemoryMarshal.GetReference(source);
+			ref var p2 = ref MemoryMarshal.GetReference(source);
 			source = source.Slice(sizeof(T)); // range check here
-			Unsafe.As<byte, T>(ref p) = value;
+			Unsafe.As<byte, T>(ref p2) = value;
 		}
+		/// <summary>
+		/// Copies <paramref name="length"/> bytes from the <paramref name="source"/> to the <paramref name="destination"/>
+		/// and advances both two spans by <paramref name="length"/>.
+		/// </summary>
 		public static unsafe void CopyToAndSlice<T>(this scoped ref ReadOnlySpan<T> source, scoped ref Span<T> destination, int length) where T : unmanaged {
 			ref var p = ref MemoryMarshal.GetReference(source);
 			ref var p2 = ref MemoryMarshal.GetReference(destination);
@@ -33,7 +45,19 @@ namespace SystemExtensions.Spans {
 			destination = destination.Slice(length); // and here
 			MemoryMarshal.CreateReadOnlySpan(ref p, length).CopyToUnchecked(ref p2);
 		}
+		/// <summary>
+		/// Copies <paramref name="source"/> to the <paramref name="destination"/>
+		/// and advances the <paramref name="destination"/> by <paramref name="source"/>.Length.
+		/// </summary>
+		public static unsafe void CopyToAndSliceDest<T>(this scoped ReadOnlySpan<T> source, scoped ref Span<T> destination) where T : unmanaged {
+			ref var p2 = ref MemoryMarshal.GetReference(destination);
+			destination = destination.Slice(source.Length); // range check here
+			source.CopyToUnchecked(ref p2);
+		}
 
+		/// <summary>
+		/// Returns a <see cref="Span{T}"/> that represents the memory of the by reference parameter <paramref name="value"/>.
+		/// </summary>
 		public static unsafe Span<byte> AsSpan<T>(this ref T value) where T : unmanaged
 			=> MemoryMarshal.CreateSpan(ref Unsafe.As<T, byte>(ref value), sizeof(T));
 

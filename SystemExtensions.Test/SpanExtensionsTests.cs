@@ -60,8 +60,8 @@ namespace SystemExtensions.Tests {
 			Random.Shared.NextBytes(input);
 			var span1 = new ReadOnlySpan<byte>(input);
 			var span2 = new Span<byte>(output);
-			var span1Snapshot = span1;
-			var span2Snapshot = span2;
+			var spanshot1 = span1;
+			var spanshot2 = span2;
 
 			// Act
 			try {
@@ -73,9 +73,44 @@ namespace SystemExtensions.Tests {
 			Assert.IsTrue(length >= 0 && length <= input.Length);
 
 			// Assert
-			Assert.IsTrue(span1Snapshot[..length].SequenceEqual(span2Snapshot[..length]));
-			Assert.IsTrue(span1 == span1Snapshot[length..]);
-			Assert.IsTrue(span2 == span2Snapshot[length..]);
+			Assert.IsTrue(spanshot1[..length].SequenceEqual(spanshot2[..length]));
+			Assert.IsTrue(span1 == spanshot1[length..]);
+			Assert.IsTrue(span2 == spanshot2[length..]);
+		}
+		[TestMethod]
+		public void CopyToAndSliceDest_Test() {
+			// Arrange
+			var input = new byte[5];
+			var output = new byte[10];
+			Random.Shared.NextBytes(input);
+			var span1 = new ReadOnlySpan<byte>(input);
+			var span2 = new Span<byte>(output);
+			var snapshot1 = span1;
+			var snapshot2 = span2;
+
+			// Act
+			span1.CopyToAndSliceDest(ref span2);
+
+			// Assert
+			Assert.IsTrue(span1.SequenceEqual(snapshot2[..input.Length]));
+			Assert.IsTrue(snapshot1 == span1);
+			Assert.IsTrue(span2 == snapshot2[input.Length..]);
+		}
+
+		[TestMethod]
+		public void AsSpan_Test() {
+			// Arrange
+			// Any unmanaged type
+			var struct1 = DateTime.UtcNow;
+			var struct2 = Guid.NewGuid();
+
+			// Act
+			var actual1 = struct1.AsSpan();
+			var actual2 = struct2.AsSpan();
+
+			// Assert
+			Assert.IsTrue(MemoryMarshal.AsBytes<DateTime>(new(ref struct1)) == actual1);
+			Assert.IsTrue(MemoryMarshal.AsBytes<Guid>(new(ref struct2)) == actual2);
 		}
 
 		[TestMethod]
