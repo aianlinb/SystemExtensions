@@ -212,23 +212,28 @@ namespace SystemExtensions.Tests {
 			var span = new ReadOnlySpan<int>(array);
 			var excepted1 = array[..2];
 			var excepted2 = array[2..];
-			var excepted3 = new ReadOnlySpan<int>([99, 999]);
+			var excepted3 = span[0];
+			var excepted4 = span[^1];
 
 			// Act
 			var actual1 = SpanExtensions.StartsWith(span, excepted1);
 			var actual2 = SpanExtensions.StartsWith(span, excepted2);
 			var actual3 = SpanExtensions.StartsWith(span, excepted3);
-			var actual4 = SpanExtensions.EndsWith(span, excepted1);
-			var actual5 = SpanExtensions.EndsWith(span, excepted2);
-			var actual6 = SpanExtensions.EndsWith(span, excepted3);
+			var actual4 = SpanExtensions.StartsWith(span, excepted4);
+			var actual5 = SpanExtensions.EndsWith(span, excepted1);
+			var actual6 = SpanExtensions.EndsWith(span, excepted2);
+			var actual7 = SpanExtensions.EndsWith(span, excepted3);
+			var actual8 = SpanExtensions.EndsWith(span, excepted4);
 
 			// Assert
 			Assert.AreEqual(MemoryExtensions.StartsWith(span, excepted1), actual1);
 			Assert.AreEqual(MemoryExtensions.StartsWith(span, excepted2), actual2);
-			Assert.AreEqual(MemoryExtensions.StartsWith(span, excepted3), actual3);
-			Assert.AreEqual(MemoryExtensions.EndsWith(span, excepted1), actual4);
-			Assert.AreEqual(MemoryExtensions.EndsWith(span, excepted2), actual5);
-			Assert.AreEqual(MemoryExtensions.EndsWith(span, excepted3), actual6);
+			Assert.IsTrue(actual3);
+			Assert.IsFalse(actual4);
+			Assert.AreEqual(MemoryExtensions.EndsWith(span, excepted1), actual5);
+			Assert.AreEqual(MemoryExtensions.EndsWith(span, excepted2), actual6);
+			Assert.IsFalse(actual7);
+			Assert.IsTrue(actual8);
 		}
 		[TestMethod]
 		public void Replace_Test() {

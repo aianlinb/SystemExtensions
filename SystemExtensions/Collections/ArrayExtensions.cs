@@ -13,10 +13,10 @@ namespace SystemExtensions.Collections {
 			var span = new Span<T>(result); // cache to avoid duplicate type checks
 			if (index != 0)
 				new ReadOnlySpan<T>(array, 0, index).CopyToUnchecked(ref MemoryMarshal.GetReference(span)); // index check here
-			Unsafe.Add(ref MemoryMarshal.GetReference(span), index) = item;
+			Unsafe.Add(ref MemoryMarshal.GetReference(span), (nint)(uint)index) = item;
 			if (index != array.Length)
 				new ReadOnlySpan<T>(array, index, array.Length - index).CopyToUnchecked(
-					ref Unsafe.Add(ref MemoryMarshal.GetReference(span), index + 1));
+					ref Unsafe.Add(ref MemoryMarshal.GetReference(span), (nint)(uint)(index + 1)));
 			return result;
 		}
 
@@ -27,7 +27,7 @@ namespace SystemExtensions.Collections {
 				new ReadOnlySpan<T>(array, 0, index).CopyToUnchecked(ref MemoryMarshal.GetReference(span)); // index check here
 			if (index != result.Length)
 				new ReadOnlySpan<T>(array, index + 1, result.Length - index).CopyToUnchecked(
-					ref Unsafe.Add(ref MemoryMarshal.GetReference(span), index));
+					ref Unsafe.Add(ref MemoryMarshal.GetReference(span), (nint)(uint)index));
 			return result;
 		}
 

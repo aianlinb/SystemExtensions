@@ -1,5 +1,4 @@
-﻿using System;
-using System.Buffers;
+﻿using System.Buffers;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -57,18 +56,18 @@ namespace SystemExtensions.Collections {
 
 		public void Add(T item) {
 			EnsureRemainingCapacity(1);
-			Unsafe.Add(ref GetPinnableReference(), Count) = item;
+			Unsafe.Add(ref GetPinnableReference(), (nint)(uint)Count) = item;
 			++Count;
 		}
 		public void AddRange(scoped ReadOnlySpan<T> items) {
 			EnsureRemainingCapacity(items.Length);
-			items.CopyToUnchecked(ref Unsafe.Add(ref GetPinnableReference(), Count));
+			items.CopyToUnchecked(ref Unsafe.Add(ref GetPinnableReference(), (nint)(uint)Count));
 			Count += items.Length;
 		}
 		public void AddRange(scoped in ReadOnlySequence<T> items) {
 			EnsureRemainingCapacity(checked((int)items.Length));
 			foreach (var segment in items) {
-				segment.Span.CopyToUnchecked(ref Unsafe.Add(ref GetPinnableReference(), Count));
+				segment.Span.CopyToUnchecked(ref Unsafe.Add(ref GetPinnableReference(), (nint)(uint)Count));
 				Count += segment.Length;
 			}
 		}
@@ -143,8 +142,8 @@ namespace SystemExtensions.Collections {
 
 		public void Insert(int index, T item) {
 			EnsureRemainingCapacity(1);
-			AsReadOnlySpan(index).CopyToUnchecked(ref Unsafe.Add(ref GetPinnableReference(), index + 1));
-			Unsafe.Add(ref GetPinnableReference(), index) = item;
+			AsReadOnlySpan(index).CopyToUnchecked(ref Unsafe.Add(ref GetPinnableReference(), (nint)(uint)(index + 1)));
+			Unsafe.Add(ref GetPinnableReference(), (nint)(uint)index) = item;
 			++Count;
 		}
 		/// <remarks>
@@ -155,8 +154,9 @@ namespace SystemExtensions.Collections {
 			// There's a rare case that the `items` overlaps with the destination below line copying to,
 			// but the memory there is uninitialized and shouldn't be used by the user,
 			// so we treat it as an unsafe behavior caused by the user themselves and don't check it.
-			AsReadOnlySpan(index).CopyToUnchecked(ref Unsafe.Add(ref GetPinnableReference(), index + items.Length));
-			items.CopyToUnchecked(ref Unsafe.Add(ref GetPinnableReference(), index));
+			var span = AsSpan(index);
+			span.CopyToUnchecked(ref Unsafe.Add(ref MemoryMarshal.GetReference(span), (nint)(uint)items.Length));
+			items.CopyToUnchecked(ref Unsafe.Add(ref GetPinnableReference(), (nint)(uint)index));
 			Count += items.Length;
 		}
 		/// <remarks>
@@ -165,9 +165,10 @@ namespace SystemExtensions.Collections {
 		public void InsertRange(int index, scoped in ReadOnlySequence<T> items) {
 			var len = checked((int)items.Length);
 			EnsureRemainingCapacity(len);
-			AsReadOnlySpan(index).CopyToUnchecked(ref Unsafe.Add(ref GetPinnableReference(), index + len));
+			var span = AsSpan(index);
+			span.CopyToUnchecked(ref Unsafe.Add(ref MemoryMarshal.GetReference(span), (nint)(uint)len));
 			foreach (var segment in items) {
-				segment.Span.CopyToUnchecked(ref Unsafe.Add(ref GetPinnableReference(), index));
+				segment.Span.CopyToUnchecked(ref Unsafe.Add(ref GetPinnableReference(), (nint)(uint)index));
 				index += segment.Length;
 			}
 			Count += len;
@@ -183,11 +184,11 @@ namespace SystemExtensions.Collections {
 		}
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public void RemoveAt(int index) {
-			AsReadOnlySpan(index + 1).CopyToUnchecked(ref Unsafe.Add(ref GetPinnableReference(), index));
+			AsReadOnlySpan(index + 1).CopyToUnchecked(ref Unsafe.Add(ref GetPinnableReference(), (nint)(uint)index));
 			--Count;
 
 			if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
-				Unsafe.Add(ref GetPinnableReference(), Count) = default!;
+				Unsafe.Add(ref GetPinnableReference(), (nint)(uint)Count) = default!;
 		}
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public void RemoveRange(int startIndex) {
@@ -198,10 +199,15 @@ namespace SystemExtensions.Collections {
 		}
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public void RemoveRange(int startIndex, int length) {
-			if (length == 0)
-				return;
+			if (Environment.Is64BitProcess) {
+				if ((ulong)(uint)startIndex + (ulong)(uint)length > (ulong)(uint)Count)
+					ThrowHelper.Throw<ArgumentOutOfRangeException>();
+			} else {
+				if ((uint)startIndex > (uint)Count || (uint)length > (uint)(Count - startIndex))
+					ThrowHelper.Throw<ArgumentOutOfRangeException>();
+			}
 
-			AsReadOnlySpan(startIndex + length).CopyToUnchecked(ref Unsafe.Add(ref GetPinnableReference(), startIndex));
+			AsReadOnlySpan().SliceUnchecked(startIndex + length).CopyToUnchecked(ref Unsafe.Add(ref GetPinnableReference(), (nint)(uint)startIndex));
 			Count -= length;
 
 			if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
@@ -227,12 +233,11 @@ namespace SystemExtensions.Collections {
 				var length = offset - lastEnd;
 				if (length < 0)
 					ThrowHelper.Throw<ArgumentException>("The provided ranges must be sorted in ascending order, and must not overlap");
-				AsReadOnlySpan(lastEnd, length)
-					.CopyToUnchecked(ref Unsafe.Add(ref GetPinnableReference(), pos));
+				AsReadOnlySpan(lastEnd, length).CopyToUnchecked(ref Unsafe.Add(ref GetPinnableReference(), (nint)(uint)pos));
 				pos += length;
 				lastEnd = end;
 			}
-			AsReadOnlySpan(lastEnd).CopyToUnchecked(ref Unsafe.Add(ref GetPinnableReference(), pos));
+			AsReadOnlySpan(lastEnd).CopyToUnchecked(ref Unsafe.Add(ref GetPinnableReference(), (nint)(uint)pos));
 			pos += Count - lastEnd;
 			if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
 				AsSpan(pos).Clear();

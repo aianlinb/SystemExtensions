@@ -88,9 +88,9 @@ namespace SystemExtensions.Spans {
 			ref T valueTail = ref Unsafe.Add(ref value, 1);
 			int valueTailLength = valueLength - 1;
 
-			int index = 0;
+			nint index = 0;
 			while (true) {
-				int remainingSearchSpaceLength = searchSpaceLength - index - valueTailLength;
+				int remainingSearchSpaceLength = searchSpaceLength - (int)index - valueTailLength;
 				if (remainingSearchSpaceLength <= 0)
 					break;  // The unsearched portion is now shorter than the sequence we're looking for. So it can't be there.
 
@@ -98,11 +98,11 @@ namespace SystemExtensions.Spans {
 				int relativeIndex = IndexOf(ref Unsafe.Add(ref searchSpace, index), valueHead, remainingSearchSpaceLength);
 				if (relativeIndex < 0)
 					break;
-				index += relativeIndex;
+				index += (nint)(uint)relativeIndex;
 
 				// Found the first element of "value". See if the tail matches.
 				if (SequenceEqual(ref Unsafe.Add(ref searchSpace, index + 1), ref valueTail, valueTailLength))
-					return index;  // The tail matched. Return a successful find.
+					return (int)index;  // The tail matched. Return a successful find.
 				++index;
 			}
 			return -1;
@@ -128,16 +128,16 @@ namespace SystemExtensions.Spans {
 			// this is that it's common for callers to invoke IndexOfAny immediately before slicing,
 			// and when this is called in a loop, we want the entire loop to be bounded by O(n * l)
 			// rather than O(n^2 * l).
-
-			for (int i = 0; i < searchSpaceLength; ++i) {
+			
+			for (nint i = 0, slen = searchSpaceLength, vlen = valueLength; i < slen; ++i) {
 				if (Unsafe.Add(ref searchSpace, i) is T candidate /*not null*/) {
-					for (int j = 0; j < valueLength; ++j)
+					for (nint j = 0; j < vlen; ++j)
 						if (EqualityComparer<T>.Default.Equals(candidate, Unsafe.Add(ref value, j)))
-							return i;
+							return (int)i;
 				} else {
-					for (int j = 0; j < valueLength; ++j)
+					for (nint j = 0; j < vlen; ++j)
 						if (Unsafe.Add(ref value, j) is null)
-							return i;
+							return (int)i;
 				}
 			}
 			return -1; // not found
@@ -150,65 +150,66 @@ namespace SystemExtensions.Spans {
 					return SpanHelpersForObjects.LastIndexOf(ref Unsafe.As<T, object?>(ref searchSpace), value, length);
 			}
 
+			nint len = (nint)(uint)length;
 			if (value is not null) {
-				while (length >= 8) {
-					length -= 8;
-					if (EqualityComparer<T>.Default.Equals(value, Unsafe.Add(ref searchSpace, length + 7)))
+				while (len >= 8) {
+					len -= 8;
+					if (EqualityComparer<T>.Default.Equals(value, Unsafe.Add(ref searchSpace, len + 7)))
 						goto Found7;
-					if (EqualityComparer<T>.Default.Equals(value, Unsafe.Add(ref searchSpace, length + 6)))
+					if (EqualityComparer<T>.Default.Equals(value, Unsafe.Add(ref searchSpace, len + 6)))
 						goto Found6;
-					if (EqualityComparer<T>.Default.Equals(value, Unsafe.Add(ref searchSpace, length + 5)))
+					if (EqualityComparer<T>.Default.Equals(value, Unsafe.Add(ref searchSpace, len + 5)))
 						goto Found5;
-					if (EqualityComparer<T>.Default.Equals(value, Unsafe.Add(ref searchSpace, length + 4)))
+					if (EqualityComparer<T>.Default.Equals(value, Unsafe.Add(ref searchSpace, len + 4)))
 						goto Found4;
-					if (EqualityComparer<T>.Default.Equals(value, Unsafe.Add(ref searchSpace, length + 3)))
+					if (EqualityComparer<T>.Default.Equals(value, Unsafe.Add(ref searchSpace, len + 3)))
 						goto Found3;
-					if (EqualityComparer<T>.Default.Equals(value, Unsafe.Add(ref searchSpace, length + 2)))
+					if (EqualityComparer<T>.Default.Equals(value, Unsafe.Add(ref searchSpace, len + 2)))
 						goto Found2;
-					if (EqualityComparer<T>.Default.Equals(value, Unsafe.Add(ref searchSpace, length + 1)))
+					if (EqualityComparer<T>.Default.Equals(value, Unsafe.Add(ref searchSpace, len + 1)))
 						goto Found1;
-					if (EqualityComparer<T>.Default.Equals(value, Unsafe.Add(ref searchSpace, length)))
+					if (EqualityComparer<T>.Default.Equals(value, Unsafe.Add(ref searchSpace, len)))
 						goto Found;
 				}
 
-				if (length >= 4) {
-					length -= 4;
-					if (EqualityComparer<T>.Default.Equals(value, Unsafe.Add(ref searchSpace, length + 3)))
+				if (len >= 4) {
+					len -= 4;
+					if (EqualityComparer<T>.Default.Equals(value, Unsafe.Add(ref searchSpace, len + 3)))
 						goto Found3;
-					if (EqualityComparer<T>.Default.Equals(value, Unsafe.Add(ref searchSpace, length + 2)))
+					if (EqualityComparer<T>.Default.Equals(value, Unsafe.Add(ref searchSpace, len + 2)))
 						goto Found2;
-					if (EqualityComparer<T>.Default.Equals(value, Unsafe.Add(ref searchSpace, length + 1)))
+					if (EqualityComparer<T>.Default.Equals(value, Unsafe.Add(ref searchSpace, len + 1)))
 						goto Found1;
-					if (EqualityComparer<T>.Default.Equals(value, Unsafe.Add(ref searchSpace, length)))
+					if (EqualityComparer<T>.Default.Equals(value, Unsafe.Add(ref searchSpace, len)))
 						goto Found;
 				}
 
-				while (length-- > 0)
-					if (EqualityComparer<T>.Default.Equals(value, Unsafe.Add(ref searchSpace, length)))
+				while (len-- > 0)
+					if (EqualityComparer<T>.Default.Equals(value, Unsafe.Add(ref searchSpace, len)))
 						goto Found;
 			} else {
-				for (--length; length >= 0; --length)
-					if (Unsafe.Add(ref searchSpace, length) is null)
+				for (--len; len >= 0; --len)
+					if (Unsafe.Add(ref searchSpace, len) is null)
 						goto Found;
 			}
 
 			return -1;
 		Found: // Workaround for https://github.com/dotnet/runtime/issues/8795
-			return length;
+			return (int)len;
 		Found1:
-			return length + 1;
+			return (int)(len + 1);
 		Found2:
-			return length + 2;
+			return (int)(len + 2);
 		Found3:
-			return length + 3;
+			return (int)(len + 3);
 		Found4:
-			return length + 4;
+			return (int)(len + 4);
 		Found5:
-			return length + 5;
+			return (int)(len + 5);
 		Found6:
-			return length + 6;
+			return (int)(len + 6);
 		Found7:
-			return length + 7;
+			return (int)(len + 7);
 		}
 		public static int LastIndexOf<T>(scoped ref T searchSpace, int searchSpaceLength, scoped ref T value, int valueLength) {
 			if (valueLength == 0)
@@ -355,7 +356,7 @@ namespace SystemExtensions.Spans {
 			}
 
 			int count = 0;
-			ref T end = ref Unsafe.Add(ref current, length);
+			ref T end = ref Unsafe.Add(ref current, (nint)(uint)length);
 			if (value is not null)
 				while (Unsafe.IsAddressLessThan(ref current, ref end)) {
 					if (EqualityComparer<T>.Default.Equals(value, current))

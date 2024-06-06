@@ -48,30 +48,31 @@ namespace SystemExtensions.Spans {
 		}
 
 		public static int IndexOfAny<T>(scoped ref IEquatable<T>? searchSpace, int searchSpaceLength, ref T value, int valueLength) {
-			for (int i = 0; i < searchSpaceLength; ++i) {
-				if (Unsafe.Add(ref searchSpace, i) is IEquatable<T> candidate /*null check*/) {
-					for (int j = 0; j < valueLength; j++)
+			for (nint i = 0, slen = searchSpaceLength, vlen = valueLength; i < slen; ++i) {
+				var candidate = Unsafe.Add(ref searchSpace, i);
+				if (candidate is not null) {
+					for (nint j = 0; j < vlen; j++)
 						if (candidate.Equals(Unsafe.Add(ref value, j)))
-							return i;
+							return (int)i;
 				} else {
-					for (int j = 0; j < valueLength; j++)
+					for (nint j = 0; j < vlen; j++)
 						if (Unsafe.Add(ref value, j) is null)
-							return i;
+							return (int)i;
 				}
 			}
 			return -1; // not found
 		}
 		public static int IndexOfAny(scoped ref object? searchSpace, int searchSpaceLength, ref object? value, int valueLength) {
-			for (int i = 0; i < searchSpaceLength; ++i) {
+			for (nint i = 0, slen = searchSpaceLength, vlen = valueLength; i < slen; ++i) {
 				var candidate = Unsafe.Add(ref searchSpace, i);
 				if (candidate is not null) {
-					for (int j = 0; j < valueLength; ++j)
+					for (nint j = 0; j < vlen; ++j)
 						if (candidate.Equals(Unsafe.Add(ref value, j)))
-							return i;
+							return (int)i;
 				} else {
-					for (int j = 0; j < valueLength; ++j)
+					for (nint j = 0; j < vlen; ++j)
 						if (Unsafe.Add(ref value, j) is null)
-							return i;
+							return (int)i;
 				}
 			}
 			return -1; // not found
@@ -114,7 +115,7 @@ namespace SystemExtensions.Spans {
 
 		public static int Count<T>(scoped ref T current, IEquatable<T> value, int length) {
 			int count = 0;
-			ref T end = ref Unsafe.Add(ref current, length);
+			ref T end = ref Unsafe.Add(ref current, (nint)(uint)length);
 			while (Unsafe.IsAddressLessThan(ref current, ref end)) {
 				if (value.Equals(current))
 					++count;
@@ -124,7 +125,7 @@ namespace SystemExtensions.Spans {
 		}
 		public static int Count(scoped ref object? current, object? value, int length) {
 			int count = 0;
-			ref var end = ref Unsafe.Add(ref current, length);
+			ref var end = ref Unsafe.Add(ref current, (nint)(uint)length);
 			if (value is not null)
 				while (Unsafe.IsAddressLessThan(ref current, ref end)) {
 					if (value.Equals(current))

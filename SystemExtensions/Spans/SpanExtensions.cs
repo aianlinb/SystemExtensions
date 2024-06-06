@@ -379,6 +379,13 @@ namespace SystemExtensions.Spans {
 		}
 
 		/// <summary>
+		/// Determines whether the first element of the <paramref name="span"/> equals to the <paramref name="value"/>.
+		/// </summary>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static unsafe bool StartsWith<T>(this scoped ReadOnlySpan<T> span, T value) {
+			return !span.IsEmpty && EqualityComparer<T>.Default.Equals(value, MemoryMarshal.GetReference(span));
+		}
+		/// <summary>
 		/// Determines whether the specified sequence appears at the start of the <paramref name="span"/>.
 		/// </summary>
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -393,6 +400,13 @@ namespace SystemExtensions.Spans {
 					((uint)valueLength) * (nuint)sizeof(T));  // If this multiplication overflows, the Span we got overflows the entire address range. There's no happy outcome for this api in such a case so we choose not to take the overhead of checking.
 #pragma warning restore CS8500
 			return valueLength <= span.Length && SpanHelpersWithoutIEquatable.SequenceEqual(ref MemoryMarshal.GetReference(span), ref MemoryMarshal.GetReference(value), valueLength);
+		}
+		/// <summary>
+		/// Determines whether the last element of the <paramref name="span"/> equals to the <paramref name="value"/>.
+		/// </summary>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static unsafe bool EndsWith<T>(this scoped ReadOnlySpan<T> span, T value) {
+			return !span.IsEmpty && EqualityComparer<T>.Default.Equals(value, Unsafe.Add(ref MemoryMarshal.GetReference(span), (nint)(uint)(span.Length - 1) /* force zero-extension */));
 		}
 		/// <summary>
 		/// Determines whether the specified sequence appears at the end of the <paramref name="span"/>.
@@ -497,8 +511,8 @@ namespace SystemExtensions.Spans {
 			unchecked {
 				if (byteOffset != 0 &&
 #pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
-					((nuint)byteOffset < (nuint)((nint)source.Length * sizeof(T)) ||
-					 (nuint)byteOffset > (nuint)(-((nint)destination.Length * sizeof(T))))) {
+					((nuint)byteOffset < (nuint)((nint)(uint)source.Length * sizeof(T)) ||
+					 (nuint)byteOffset > (nuint)(-((nint)(uint)destination.Length * sizeof(T))))) {
 #pragma warning restore CS8500
 					ThrowHelper.Throw<ArgumentException>("Source and destination span overlapped", nameof(destination));
 				}
@@ -714,7 +728,7 @@ namespace SystemExtensions.Spans {
 				public Span<Range> AsSpan() => MemoryMarshal.CreateSpan(ref firstRange, stackAllocationLength);
 
 				[MethodImpl(MethodImplOptions.AggressiveInlining)]
-				public ref Range UnsafeAt(int index) => ref Unsafe.Add(ref Unsafe.AsRef(ref firstRange), index);
+				public ref Range UnsafeAt(int index) => ref Unsafe.Add(ref Unsafe.AsRef(ref firstRange), (nint)(uint)index);
 			}
 		}
 
