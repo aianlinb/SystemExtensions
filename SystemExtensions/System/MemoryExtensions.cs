@@ -6,7 +6,6 @@ using System.Runtime.InteropServices;
 using SystemExtensions.Spans;
 
 namespace SystemExtensions.System;
-using System = global::System;
 
 public static class MemoryExtensions {
 	// Most of the code in this region was copied from System.MemoryExtensions and removed the IEquatable<T> limitation.
@@ -19,9 +18,15 @@ public static class MemoryExtensions {
 	/// <param name="value">The value to search for.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static bool Contains<T>(this scoped ReadOnlySpan<T> span, T value) => IndexOf(span, value) >= 0;
-	/// <inheritdoc cref="System.MemoryExtensions.Contains{T}(ReadOnlySpan{T}, T)"/>
+	/// <inheritdoc cref="Contains{T}(ReadOnlySpan{T}, T)"/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static bool Contains<T>(this scoped ReadOnlySpan<T> span, scoped ReadOnlySpan<T> value) => IndexOf(span, value) >= 0;
+	/// <inheritdoc cref="Contains{T}(ReadOnlySpan{T}, T)"/>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static bool Contains<T>(this scoped Span<T> span, T value) => Contains((ReadOnlySpan<T>)span, value);
+	/// <inheritdoc cref="Contains{T}(ReadOnlySpan{T}, ReadOnlySpan{T})"/>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static bool Contains<T>(this scoped Span<T> span, scoped ReadOnlySpan<T> value) => Contains((ReadOnlySpan<T>)span, value);
 	/// <summary>
 	/// Searches for any occurance of any of the specified <paramref name="values"/> and returns <see langword="true"/> if found. If not found, returns <see langword="false"/>.
 	/// </summary>
@@ -29,6 +34,9 @@ public static class MemoryExtensions {
 	/// <param name="values">The set of values to search for.</param>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static bool ContainsAny<T>(this scoped ReadOnlySpan<T> span, scoped ReadOnlySpan<T> values) => IndexOfAny(span, values) >= 0;
+	/// <inheritdoc cref="ContainsAny{T}(ReadOnlySpan{T}, ReadOnlySpan{T})"/>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static bool ContainsAny<T>(this scoped Span<T> span, scoped ReadOnlySpan<T> values) => ContainsAny((ReadOnlySpan<T>)span, values);
 
 	/// <summary>
 	/// Searches for the specified <paramref name="value"/> and returns the index of its first occurrence. If not found, returns -1.
@@ -63,7 +71,7 @@ public static class MemoryExtensions {
 		}
 		return SpanHelpersWithoutIEquatable.IndexOf(ref MemoryMarshal.GetReference(span), value, span.Length);
 	}
-	/// <inheritdoc cref="System.MemoryExtensions.IndexOf{T}(ReadOnlySpan{T}, T)"/>
+	/// <inheritdoc cref="IndexOf{T}(ReadOnlySpan{T}, T)"/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static unsafe int IndexOf<T>(this scoped ReadOnlySpan<T> span, scoped ReadOnlySpan<T> value) {
 		if (corelib::System.Runtime.CompilerServices.RuntimeHelpers.IsBitwiseEquatable<T>()) {
@@ -84,6 +92,13 @@ public static class MemoryExtensions {
 		}
 		return SpanHelpersWithoutIEquatable.IndexOf(ref MemoryMarshal.GetReference(span), span.Length, ref MemoryMarshal.GetReference(value), value.Length);
 	}
+	/// <inheritdoc cref="IndexOf{T}(ReadOnlySpan{T}, T)"/>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static unsafe int IndexOf<T>(this scoped Span<T> span, T value) => IndexOf((ReadOnlySpan<T>)span, value);
+	/// <inheritdoc cref="IndexOf{T}(ReadOnlySpan{T}, ReadOnlySpan{T})"/>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static unsafe int IndexOf<T>(this scoped Span<T> span, scoped ReadOnlySpan<T> value) => IndexOf((ReadOnlySpan<T>)span, value);
+
 	/// <summary>
 	/// Searches for the first index of any of the specified <paramref name="values"/> similar to calling <see cref="IndexOf{T}(ReadOnlySpan{T}, T)"/> several times with the logical OR operator. If not found, returns -1.
 	/// </summary>
@@ -170,6 +185,9 @@ public static class MemoryExtensions {
 		}
 		return SpanHelpersWithoutIEquatable.IndexOfAny(ref MemoryMarshal.GetReference(span), span.Length, ref MemoryMarshal.GetReference(values), values.Length);
 	}
+	/// <inheritdoc cref="IndexOfAny{T}(ReadOnlySpan{T}, ReadOnlySpan{T})"/>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static unsafe int IndexOfAny<T>(this scoped Span<T> span, scoped ReadOnlySpan<T> values) => IndexOfAny((ReadOnlySpan<T>)span, values);
 
 	/// <summary>
 	/// Searches for the specified <paramref name="value"/> and returns the index of its last occurrence. If not found, returns -1.
@@ -231,6 +249,9 @@ public static class MemoryExtensions {
 		}
 		return SpanHelpersWithoutIEquatable.LastIndexOf(ref MemoryMarshal.GetReference(span), span.Length, ref MemoryMarshal.GetReference(value), value.Length);
 	}
+	/// <inheritdoc cref="LastIndexOf{T}(ReadOnlySpan{T}, T)"/>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static unsafe int LastIndexOf<T>(this scoped Span<T> span, T value) => LastIndexOf((ReadOnlySpan<T>)span, value);
 
 	/// <summary>
 	/// Determines whether the specified sequence appears at the start of the <paramref name="span"/>.
@@ -248,6 +269,9 @@ public static class MemoryExtensions {
 #pragma warning restore CS8500
 		return valueLength <= span.Length && SpanHelpersWithoutIEquatable.SequenceEqual(ref MemoryMarshal.GetReference(span), ref MemoryMarshal.GetReference(value), valueLength);
 	}
+	/// <inheritdoc cref="StartsWith{T}(ReadOnlySpan{T}, ReadOnlySpan{T})"/>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static unsafe bool StartsWith<T>(this scoped Span<T> span, scoped ReadOnlySpan<T> value) => StartsWith((ReadOnlySpan<T>)span, value);
 	/// <summary>
 	/// Determines whether the specified sequence appears at the end of the <paramref name="span"/>.
 	/// </summary>
@@ -269,6 +293,9 @@ public static class MemoryExtensions {
 				ref MemoryMarshal.GetReference(value),
 				valueLength);
 	}
+	/// <inheritdoc cref="EndsWith{T}(ReadOnlySpan{T}, ReadOnlySpan{T})"/>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static unsafe bool EndsWith<T>(this scoped Span<T> span, scoped ReadOnlySpan<T> value) => EndsWith((ReadOnlySpan<T>)span, value);
 
 	/// <summary>
 	/// Replaces all occurrences of <paramref name="oldValue"/> with <paramref name="newValue"/>.
@@ -398,6 +425,9 @@ public static class MemoryExtensions {
 		}
 		SpanHelpersWithoutIEquatable.Replace(ref src, ref dst, oldValue, newValue, length);
 	}
+	/// <inheritdoc cref="Replace{T}(ReadOnlySpan{T}, Span{T}, T, T)"/>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static unsafe void Replace<T>(this scoped Span<T> source, scoped Span<T> destination, T oldValue, T newValue) where T : IEquatable<T>? => Replace((ReadOnlySpan<T>)source, destination, oldValue, newValue);
 
 	/// <summary>Counts the number of times the specified <paramref name="value"/> occurs in the <paramref name="span"/>.</summary>
 	/// <typeparam name="T">The element type of the span.</typeparam>
@@ -454,4 +484,10 @@ public static class MemoryExtensions {
 				return count;
 		}
 	}
+	/// <inheritdoc cref="Count{T}(ReadOnlySpan{T}, T)"/>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static int Count<T>(this scoped Span<T> span, T value) => Count((ReadOnlySpan<T>)span, value);
+	/// <inheritdoc cref="Count{T}(ReadOnlySpan{T}, ReadOnlySpan{T})"/>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static int Count<T>(this scoped Span<T> span, scoped ReadOnlySpan<T> value) => Count((ReadOnlySpan<T>)span, value);
 }

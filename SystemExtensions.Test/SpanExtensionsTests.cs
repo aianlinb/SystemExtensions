@@ -107,12 +107,32 @@ public class SpanExtensionsTests {
 		var struct2 = Guid.NewGuid();
 
 		// Act
-		var actual1 = struct1.AsSpan();
-		var actual2 = struct2.AsSpan();
+		var actual1_1 = struct1.AsSpan();
+		var actual2_1 = struct2.AsSpan();
+		var actual1_2 = SpanExtensions.AsReadOnlySpan(in struct1);
+		var actual2_2 = SpanExtensions.AsReadOnlySpan(in struct2);
 
 		// Assert
-		Assert.IsTrue(MemoryMarshal.AsBytes<DateTime>(new(ref struct1)) == actual1);
-		Assert.IsTrue(MemoryMarshal.AsBytes<Guid>(new(ref struct2)) == actual2);
+		Assert.IsTrue(MemoryMarshal.AsBytes<DateTime>(new(ref struct1)) == actual1_1);
+		Assert.IsTrue(MemoryMarshal.AsBytes<Guid>(new(ref struct2)) == actual2_1);
+		Assert.IsTrue(MemoryMarshal.AsBytes<DateTime>(new(ref struct1)) == actual1_2);
+		Assert.IsTrue(MemoryMarshal.AsBytes<Guid>(new(ref struct2)) == actual2_2);
+	}
+
+	[TestMethod]
+	public void ReadWriteStructTest() {
+		// Arrange
+		var span = new byte[32].AsSpan();
+		var expected = TestStruct.CreateRandom();
+		span.Write(expected);
+
+		// Act
+		var result1 = span.Read<TestStruct>();
+		span.Read(out TestStruct result2);
+
+		// Assert
+		Assert.AreEqual(expected, result1);
+		Assert.AreEqual(expected, result2);
 	}
 
 	[TestMethod]

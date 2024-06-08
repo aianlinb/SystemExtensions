@@ -17,16 +17,51 @@ public static class SpanExtensions {
 	public static ReadOnlyMemory<T> AsReadOnlyMemory<T>(this T[] array) => array;
 
 	/// <summary>
-	/// Returns a <see cref="Span{T}"/> that represents the memory of the by reference parameter <paramref name="value"/>.
+	/// Returns a <see cref="Span{T}"/> of <see cref="byte"/> that represents the memory of the by reference parameter <paramref name="value"/>.
 	/// </summary>
 	public static unsafe Span<byte> AsSpan<T>(this ref T value) where T : unmanaged
 		=> MemoryMarshal.CreateSpan(ref Unsafe.As<T, byte>(ref value), sizeof(T));
+	/// <summary>
+	/// Returns a <see cref="ReadOnlySpan{T}"/> of <see cref="byte"/> that represents the memory of the <see langword="in"/> parameter <paramref name="value"/>.
+	/// </summary>
+	public static unsafe ReadOnlySpan<byte> AsReadOnlySpan<T>(/*this CS8338*/in T value) where T : unmanaged
+		=> MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<T, byte>(ref Unsafe.AsRef(in value)), sizeof(T));
+
+	/// <exception cref="ArgumentException"/>
+	public static T Read<T>(this ReadOnlySpan<byte> source) where T : unmanaged {
+		Read(source, out T value);
+		return value;
+	}
+	/// <exception cref="ArgumentException"/>
+	public static unsafe void Read<T>(this ReadOnlySpan<byte> source, out T value) where T : unmanaged {
+		Unsafe.SkipInit(out value);
+		source[..sizeof(T)].CopyToUnchecked(ref Unsafe.As<T, byte>(ref value));
+	}
+	/// <exception cref="ArgumentException"/>
+	public static T Read<T>(this Span<byte> source) where T : unmanaged {
+		return Read<T>((ReadOnlySpan<byte>)source);
+	}
+	/// <exception cref="ArgumentException"/>
+	public static void Read<T>(this Span<byte> source, out T value) where T : unmanaged {
+		Read((ReadOnlySpan<byte>)source, out value);
+	}
+	/// <exception cref="ArgumentException"/>
+	public static void Write<T>(this Span<byte> source, scoped in T value) where T : unmanaged {
+		AsReadOnlySpan(in value).CopyTo(source);
+	}
 
 	/// <summary>
 	/// Reads a value of type <typeparamref name="T"/> from the <paramref name="source"/>
 	/// and advances the <paramref name="source"/> by <see langword="sizeof"/>(<typeparamref name="T"/>).
 	/// </summary>
+	/// <exception cref="ArgumentOutOfRangeException"/>
 	public static unsafe T ReadAndSlice<T>(this scoped ref ReadOnlySpan<byte> source) where T : unmanaged {
+		ref var p = ref MemoryMarshal.GetReference(source);
+		source = source.Slice(sizeof(T)); // range check here
+		return Unsafe.As<byte, T>(ref p);
+	}
+	/// <inheritdoc cref="ReadAndSlice{T}(ref ReadOnlySpan{byte})"/>
+	public static unsafe T ReadAndSlice<T>(this scoped ref Span<byte> source) where T : unmanaged {
 		ref var p = ref MemoryMarshal.GetReference(source);
 		source = source.Slice(sizeof(T)); // range check here
 		return Unsafe.As<byte, T>(ref p);
@@ -35,6 +70,7 @@ public static class SpanExtensions {
 	/// Writes a <paramref name="value"/> to the <paramref name="source"/>
 	/// and advances the <paramref name="source"/> by <see langword="sizeof"/>(<typeparamref name="T"/>).
 	/// </summary>
+	/// <exception cref="ArgumentOutOfRangeException"/>
 	public static unsafe void WriteAndSlice<T>(this scoped ref Span<byte> source, T value) where T : unmanaged {
 		ref var p2 = ref MemoryMarshal.GetReference(source);
 		source = source.Slice(sizeof(T)); // range check here
@@ -44,7 +80,16 @@ public static class SpanExtensions {
 	/// Copies <paramref name="length"/> bytes from the <paramref name="source"/> to the <paramref name="destination"/>
 	/// and advances both two spans by <paramref name="length"/>.
 	/// </summary>
+	/// <exception cref="ArgumentOutOfRangeException"/>
 	public static unsafe void CopyToAndSlice<T>(this scoped ref ReadOnlySpan<T> source, scoped ref Span<T> destination, int length) where T : unmanaged {
+		ref var p = ref MemoryMarshal.GetReference(source);
+		ref var p2 = ref MemoryMarshal.GetReference(destination);
+		source = source.Slice(length); // range check here
+		destination = destination.Slice(length); // and here
+		MemoryMarshal.CreateReadOnlySpan(ref p, length).CopyToUnchecked(ref p2);
+	}
+	/// <inheritdoc cref="CopyToAndSlice{T}(ref ReadOnlySpan{T}, ref Span{T}, int)"/>
+	public static unsafe void CopyToAndSlice<T>(this scoped ref Span<T> source, scoped ref Span<T> destination, int length) where T : unmanaged {
 		ref var p = ref MemoryMarshal.GetReference(source);
 		ref var p2 = ref MemoryMarshal.GetReference(destination);
 		source = source.Slice(length); // range check here
@@ -55,25 +100,36 @@ public static class SpanExtensions {
 	/// Copies <paramref name="source"/> to the <paramref name="destination"/>
 	/// and advances the <paramref name="destination"/> by <paramref name="source"/>.Length.
 	/// </summary>
+	/// <exception cref="ArgumentOutOfRangeException"/>
 	public static unsafe void CopyToAndSliceDest<T>(this scoped ReadOnlySpan<T> source, scoped ref Span<T> destination) where T : unmanaged {
 		ref var p2 = ref MemoryMarshal.GetReference(destination);
 		destination = destination.Slice(source.Length); // range check here
 		source.CopyToUnchecked(ref p2);
 	}
+	/// <inheritdoc cref="CopyToAndSliceDest{T}(ReadOnlySpan{T}, ref Span{T})"/>
+	public static unsafe void CopyToAndSliceDest<T>(this scoped Span<T> source, scoped ref Span<T> destination) where T : unmanaged {
+		CopyToAndSliceDest((ReadOnlySpan<T>)source, ref destination);
+	}
 
 	/// <summary>
 	/// Determines whether the first element of the <paramref name="span"/> equals to the <paramref name="value"/>.
 	/// </summary>
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static unsafe bool StartsWith<T>(this scoped ReadOnlySpan<T> span, T value) {
 		return !span.IsEmpty && EqualityComparer<T>.Default.Equals(value, MemoryMarshal.GetReference(span));
+	}
+	/// <inheritdoc cref="StartsWith{T}(ReadOnlySpan{T}, T)"/>
+	public static unsafe bool StartsWith<T>(this scoped Span<T> span, T value) {
+		return StartsWith((ReadOnlySpan<T>)span, value);
 	}
 	/// <summary>
 	/// Determines whether the last element of the <paramref name="span"/> equals to the <paramref name="value"/>.
 	/// </summary>
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static unsafe bool EndsWith<T>(this scoped ReadOnlySpan<T> span, T value) {
 		return !span.IsEmpty && EqualityComparer<T>.Default.Equals(value, Unsafe.Add(ref MemoryMarshal.GetReference(span), (nint)(uint)(span.Length - 1) /* force zero-extension */));
+	}
+	/// <inheritdoc cref="EndsWith{T}(ReadOnlySpan{T}, T)"/>
+	public static unsafe bool EndsWith<T>(this scoped Span<T> span, T value) {
+		return EndsWith((ReadOnlySpan<T>)span, value);
 	}
 
 	public static bool Any<T>(this scoped ReadOnlySpan<T> source, Predicate<T> predicate) {
