@@ -12,6 +12,7 @@ using corelib::System.Runtime.CompilerServices;
 using SystemExtensions.Spans;
 
 namespace SystemExtensions.Unsafes;
+using System = global::System;
 /// <summary>
 /// Helper methods to treat a space as an <see cref="object"/> to avoid heap allocation.
 /// <br />*Haven't tested any yet. Be careful using this class*

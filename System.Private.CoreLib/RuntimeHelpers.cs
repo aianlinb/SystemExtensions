@@ -1,5 +1,4 @@
-﻿
-namespace System.Runtime.CompilerServices;
+﻿namespace System.Runtime.CompilerServices;
 /// <summary>
 /// Forwarded to System.Private.CoreLib.dll at runtime
 /// </summary>

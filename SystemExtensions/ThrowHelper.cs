@@ -22,13 +22,11 @@ public static class ThrowHelper {
 	/// Throws an <see cref="Exception"/> of the specified type <typeparamref name="T"/> with its parameterless constructor
 	/// </summary>
 	[DoesNotReturn]
-	[MethodImpl(MethodImplOptions.NoInlining)]
 	public static void Throw<T>() where T : Exception, new() => throw new T();
 	/// <summary>
 	/// Throws an <see cref="Exception"/> of the specified type <typeparamref name="T"/> instantiated with <paramref name="arguments"/>
 	/// </summary>
 	[DoesNotReturn]
-	[MethodImpl(MethodImplOptions.NoInlining)]
 	public static void Throw<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T>(params object?[] arguments) where T : Exception => throw (Activator.CreateInstance(typeof(T), arguments) as T)!;
 
 	/// <summary>

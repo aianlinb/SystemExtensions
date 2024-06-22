@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace SystemExtensions.Spans;
+using System = global::System;
 /// <remarks>
 /// Some of the methods in this class have the same signature as the methods in <see cref="MemoryExtensions"/> without the <see cref="IEquatable{T}"/> limitation.<br />
 /// Use those in <see cref="MemoryExtensions"/> for T that implements <see cref="IEquatable{T}"/> instead, for better performance.
@@ -27,21 +28,21 @@ public static class SpanExtensions {
 	public static unsafe ReadOnlySpan<byte> AsReadOnlySpan<T>(/*this CS8338*/in T value) where T : unmanaged
 		=> MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<T, byte>(ref Unsafe.AsRef(in value)), sizeof(T));
 
-	/// <exception cref="ArgumentException"/>
-	public static T Read<T>(this ReadOnlySpan<byte> source) where T : unmanaged {
-		Read(source, out T value);
-		return value;
+	/// <exception cref="ArgumentOutOfRangeException"/>
+	public static unsafe T Read<T>(this ReadOnlySpan<byte> source) where T : unmanaged {
+		ArgumentOutOfRangeException.ThrowIfLessThan(source.Length, sizeof(T));
+		return Unsafe.As<byte, T>(ref MemoryMarshal.GetReference(source));
 	}
-	/// <exception cref="ArgumentException"/>
+	/// <exception cref="ArgumentOutOfRangeException"/>
 	public static unsafe void Read<T>(this ReadOnlySpan<byte> source, out T value) where T : unmanaged {
 		Unsafe.SkipInit(out value);
 		source[..sizeof(T)].CopyToUnchecked(ref Unsafe.As<T, byte>(ref value));
 	}
-	/// <exception cref="ArgumentException"/>
-	public static T Read<T>(this Span<byte> source) where T : unmanaged {
+	/// <exception cref="ArgumentOutOfRangeException"/>
+	public static unsafe T Read<T>(this Span<byte> source) where T : unmanaged {
 		return Read<T>((ReadOnlySpan<byte>)source);
 	}
-	/// <exception cref="ArgumentException"/>
+	/// <exception cref="ArgumentOutOfRangeException"/>
 	public static void Read<T>(this Span<byte> source, out T value) where T : unmanaged {
 		Read((ReadOnlySpan<byte>)source, out value);
 	}
@@ -130,6 +131,67 @@ public static class SpanExtensions {
 	/// <inheritdoc cref="EndsWith{T}(ReadOnlySpan{T}, T)"/>
 	public static unsafe bool EndsWith<T>(this scoped Span<T> span, T value) {
 		return EndsWith((ReadOnlySpan<T>)span, value);
+	}
+
+	/// <summary>
+	/// Replace the first occurrence of <paramref name="oldValue"/> with <paramref name="newValue"/> in the <paramref name="span"/>.
+	/// </summary>
+	/// <returns>
+	/// The index where the first <paramref name="oldValue"/> found, or -1 if not found.
+	/// </returns>
+	public static int ReplaceFirst<T>(this Span<T> span, T oldValue, T newValue) {
+		var pos = SystemExtensions.System.MemoryExtensions.IndexOf(span, oldValue);
+		if (pos >= 0)
+			Unsafe.Add(ref MemoryMarshal.GetReference(span), (nint)(uint)pos) = newValue;
+		return pos;
+	}
+	/// <summary>
+	/// <see cref="string.Replace(char, char)"/> but only replaces the first matched char.
+	/// </summary>
+	/// <param name="start">
+	/// Offset in the <paramref name="str"/> to start searching for the <paramref name="oldChar"/>.
+	/// </param>
+	/// <remarks>
+	/// The comparison uses <see cref="StringComparison.Ordinal"/> (equivalent to <see cref="char.Equals(char)"/>),
+	/// use <see cref="ReplaceFirst(string, string, string, StringComparison, int)"/> instead for other types.
+	/// </remarks>
+	public static string ReplaceFirst(this string str, char oldChar, char newChar, int start = 0) {
+		ArgumentNullException.ThrowIfNull(str);
+
+		var strSpan = str.AsSpan();
+		var pos = strSpan.Slice(start).IndexOf(oldChar);
+		if (pos < 0)
+			return str;
+		pos += start;
+
+		var result = Utils.FastAllocateString(strSpan.Length);
+		ref var r = ref Unsafe.AsRef(in result.GetPinnableReference());
+		strSpan.CopyToUnchecked(ref r);
+		Unsafe.Add(ref r, (nint)(uint)pos) = newChar;
+		return result;
+	}
+	/// <summary>
+	/// <see cref="string.Replace(string, string, StringComparison)"/> but only replaces the first matched substring.
+	/// </summary>
+	/// <param name="start">
+	/// Offset in the <paramref name="str"/> to start searching for the <paramref name="oldValue"/>.
+	/// </param>
+	public static string ReplaceFirst(this string str, string oldValue, string newValue, StringComparison comparisonType = StringComparison.CurrentCulture, int start = 0) {
+		ArgumentNullException.ThrowIfNull(str);
+
+		var strSpan = str.AsSpan();
+		var pos = strSpan.Slice(start).IndexOf(oldValue, comparisonType);
+		if (pos < 0)
+			return str;
+		pos += start;
+
+		var result = Utils.FastAllocateString(strSpan.Length - oldValue.Length + newValue.Length);
+		ref var r = ref Unsafe.AsRef(in result.GetPinnableReference());
+		strSpan.SliceUnchecked(0, pos).CopyToUnchecked(ref r);
+		r = ref Unsafe.Add(ref r, (nint)(uint)pos);
+		newValue.AsSpan().CopyToUnchecked(ref r);
+		strSpan.SliceUnchecked(pos + oldValue.Length).CopyToUnchecked(ref Unsafe.Add(ref r, (nint)(uint)newValue.Length));
+		return result;
 	}
 
 	public static bool Any<T>(this scoped ReadOnlySpan<T> source, Predicate<T> predicate) {

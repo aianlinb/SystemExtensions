@@ -1,13 +1,23 @@
-﻿using System.Buffers.Binary;
+﻿extern alias corelib;
+
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+
+using SystemExtensions.Spans;
 
 namespace SystemExtensions;
 /// <summary>
 /// Miscellaneous or not yet classified methods
 /// </summary>
 public static class Utils {
+	/// <summary>
+	/// Allocates a new string with <paramref name="length"/> characters which may not be initialized.
+	/// </summary>
+	/// <param name="length"><see cref="string.Length"/></param>
+	public static string FastAllocateString(int length) => corelib::System.String.FastAllocateString(length);
+
 	/// <summary>
 	/// Calls <see cref="ReverseBytes"/> if the current architecture is big-endian.
 	/// </summary>

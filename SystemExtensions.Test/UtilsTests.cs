@@ -6,6 +6,18 @@ namespace SystemExtensions.Tests;
 [TestClass]
 public class UtilsTests {
 	[TestMethod]
+	public void FastAllocateString_Test() {
+		// Arrange
+		int length = Random.Shared.Next(1000000);
+
+		// Act
+		var str = Utils.FastAllocateString(length);
+
+		// Assert
+		Assert.AreEqual(length, str.Length);
+	}
+
+	[TestMethod]
 	public void ReverseBytes_Test() {
 		unchecked {
 			// Arrange

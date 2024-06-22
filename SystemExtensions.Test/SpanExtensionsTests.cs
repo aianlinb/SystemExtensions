@@ -286,6 +286,49 @@ public class SpanExtensionsTests {
 		Assert.IsTrue(span4.SequenceEqual(excepted2));
 	}
 	[TestMethod]
+	public void ReplaceFirst_Test() {
+		// Arrange
+		string str1 = "Hello, World!";
+		string str2 = "Hello, World, World!";
+		string str3 = "Hello!";
+		string oldString = "World";
+		string newString = "Universe";
+		char oldChar = 'l';
+		char newChar = 'X';
+		Span<char> span = stackalloc char[str2.Length];
+		str2.AsSpan().CopyTo(span);
+
+		// Act
+		var result1 = SpanExtensions.ReplaceFirst(str1, oldString, newString);
+		var result2 = SpanExtensions.ReplaceFirst(str2, oldString, newString);
+		var result3 = SpanExtensions.ReplaceFirst(str3, oldString, newString);
+		var result4 = SpanExtensions.ReplaceFirst(str2, oldString, newString, start: 13);
+		var result5 = SpanExtensions.ReplaceFirst(str2, oldString, newString, start: 15);
+
+		var result6 = SpanExtensions.ReplaceFirst(str2, oldChar, newChar);
+
+		var result7 = SpanExtensions.ReplaceFirst(span, oldChar, newChar);
+
+		// Assert
+		Assert.AreEqual("Hello, Universe!", result1);
+		Assert.AreEqual("Hello, Universe, World!", result2);
+		Assert.AreEqual(str3, result3);
+		Assert.AreEqual("Hello, World, Universe!", result4);
+		Assert.AreEqual(str2, result5);
+
+		Assert.AreEqual("HeXlo, World, World!", result6);
+		Assert.AreEqual(result6, new string(span));
+
+		Assert.AreEqual(str2.IndexOf(oldChar), result7);
+
+		Assert.ThrowsException<ArgumentOutOfRangeException>(() => SpanExtensions.ReplaceFirst(str1, oldString, newString, start: -1));
+		Assert.ThrowsException<ArgumentOutOfRangeException>(() => SpanExtensions.ReplaceFirst(str2, oldString, newString, start: str2.Length + 1));
+		Assert.ThrowsException<ArgumentNullException>(() => SpanExtensions.ReplaceFirst((null as string)!, oldString, newString));
+		Assert.ThrowsException<NullReferenceException>(() => SpanExtensions.ReplaceFirst(str2, null!, newString));
+		Assert.ThrowsException<NullReferenceException>(() => SpanExtensions.ReplaceFirst(str2, oldString, null!));
+		Assert.ThrowsException<ArgumentNullException>(() => SpanExtensions.ReplaceFirst((null as string)!, oldChar, newChar));
+	}
+	[TestMethod]
 	public void Count_Test() {
 		// Arrange
 		var span = new ReadOnlySpan<int>(array);
