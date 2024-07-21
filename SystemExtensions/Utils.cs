@@ -2,6 +2,7 @@
 
 using System.Buffers.Binary;
 using System.Diagnostics;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -200,5 +201,9 @@ public static class Utils {
 			*/
 		}
 		return path;
+	}
+
+	public static int CombineHashCode(int left, int right) {
+		return unchecked((int)BitOperations.RotateLeft((uint)left, 5) + left) ^ right;
 	}
 }

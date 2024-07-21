@@ -5,35 +5,32 @@ namespace SystemExtensions.Collections;
 /// <summary>
 /// Rents an array from <see cref="ArrayPool{T}.Shared"/> and returns it when disposed.
 /// </summary>
-public sealed class ArrayPoolRenter<T>(int minimumLength) : IDisposable { // Must be a class to prevent duplicate
+public sealed class ArrayPoolRenter<T>(int minimumLength = 0) : IDisposable {
 	/// <summary>
 	/// The rented array. Will be <see langword="null"/> after <see cref="Return"/> or <see cref="Dispose"/>.
 	/// </summary>
 	public T[] Array { get; private set; } = ArrayPool<T>.Shared.Rent(minimumLength);
 
 	/// <summary>
-	/// Rents a array with <paramref name="minimumLength"/> and returns the old one.
+	/// Rents a array with <paramref name="minimumLength"/> and returns the old one to the <see cref="ArrayPool{T}.Shared"/>.
 	/// </summary>
-	/// <remarks>
-	/// The new array will be stored in <see cref="Array"/>.
-	/// </remarks>
-	public void Resize(int minimumLength) {
+	/// <returns><see cref="Array"/></returns>
+	public T[] Resize(int minimumLength) {
 		lock (this) {
 			var newArray = ArrayPool<T>.Shared.Rent(minimumLength); // Rent first to check the argument
 			Return();
 			Array = newArray;
+			return newArray;
 		}
 	}
 
 	/// <summary>
 	/// Rents a array with <paramref name="minimumLength"/>
 	/// and copies the first <paramref name="copyLength"/> elements to the new array.
-	/// And then returns the old one.
+	/// And then returns the old one to the <see cref="ArrayPool{T}.Shared"/>.
 	/// </summary>
-	/// <remarks>
-	/// The new array will be stored in <see cref="Array"/>.
-	/// </remarks>
-	public void Resize(int minimumLength, int copyLength) {
+	/// <returns><see cref="Array"/></returns>
+	public T[] Resize(int minimumLength, int copyLength) {
 		lock (this) {
 			var newArray = ArrayPool<T>.Shared.Rent(minimumLength);
 			try {
@@ -44,11 +41,13 @@ public sealed class ArrayPoolRenter<T>(int minimumLength) : IDisposable { // Mus
 			}
 			Return();
 			Array = newArray;
+			return newArray;
 		}
 	}
 
 	/// <summary>
-	/// Returns the <see cref="Array"/> to the pool, and sets it to <see langword="null"/>.
+	/// Returns the <see cref="Array"/> to the pool, and sets it to <see langword="null"/>.<br />
+	/// Optionally clears the array before returning if <paramref name="clearArray"/>.
 	/// </summary>
 	public void Return(bool clearArray = false) {
 		lock (this) {
@@ -60,7 +59,7 @@ public sealed class ArrayPoolRenter<T>(int minimumLength) : IDisposable { // Mus
 	}
 
 	/// <summary>
-	/// Calls <see cref="Return"/>.
+	/// Same as <see cref="Return"/>(<see langword="false"/>)
 	/// </summary>
 	public void Dispose() => Return();
 }

@@ -55,32 +55,94 @@ public static class SpanExtensions {
 	/// Reads a value of type <typeparamref name="T"/> from the <paramref name="source"/>
 	/// and advances the <paramref name="source"/> by <see langword="sizeof"/>(<typeparamref name="T"/>).
 	/// </summary>
+	/// <remarks>
+	/// Same as: (but remove the duplicate range check)
+	/// <code>
+	///	T result = MemoryMarshal.Read&lt;T&gt;(source);
+	///	source = source.Slice(sizeof(T));
+	/// </code>
+	/// </remarks>
 	/// <exception cref="ArgumentOutOfRangeException"/>
-	public static unsafe T ReadAndSlice<T>(this scoped ref ReadOnlySpan<byte> source) where T : unmanaged {
+	public static unsafe ref readonly T ReadAndSlice<T>(this scoped ref ReadOnlySpan<byte> source) where T : unmanaged {
 		ref var p = ref MemoryMarshal.GetReference(source);
 		source = source.Slice(sizeof(T)); // range check here
-		return Unsafe.As<byte, T>(ref p);
+		return ref Unsafe.As<byte, T>(ref p);
+	}
+	/// <summary>
+	/// Reads <paramref name="length"/> bytes from the <paramref name="source"/>
+	/// and advances the <paramref name="source"/> by <paramref name="length"/>.
+	/// </summary>
+	/// <remarks>
+	/// Same as: (but remove the duplicate range check)
+	/// <code>
+	///	var result = source[..length];
+	///	source = source.Slice(length);
+	/// </code>
+	/// </remarks>
+	/// <exception cref="ArgumentOutOfRangeException"/>
+	public static unsafe ReadOnlySpan<byte> ReadAndSlice(this scoped ref ReadOnlySpan<byte> source, int length) {
+		ref var p = ref MemoryMarshal.GetReference(source);
+		source = source.Slice(length); // range check here
+		return MemoryMarshal.CreateReadOnlySpan(ref p, length);
 	}
 	/// <inheritdoc cref="ReadAndSlice{T}(ref ReadOnlySpan{byte})"/>
-	public static unsafe T ReadAndSlice<T>(this scoped ref Span<byte> source) where T : unmanaged {
+	public static unsafe ref T ReadAndSlice<T>(this scoped ref Span<byte> source) where T : unmanaged {
 		ref var p = ref MemoryMarshal.GetReference(source);
 		source = source.Slice(sizeof(T)); // range check here
-		return Unsafe.As<byte, T>(ref p);
+		return ref Unsafe.As<byte, T>(ref p);
+	}
+	/// <inheritdoc cref="ReadAndSlice(ref ReadOnlySpan{byte}, int)"/>
+	public static unsafe Span<byte> ReadAndSlice(this scoped ref Span<byte> source, int length) {
+		ref var p = ref MemoryMarshal.GetReference(source);
+		source = source.Slice(length); // range check here
+		return MemoryMarshal.CreateSpan(ref p, length);
 	}
 	/// <summary>
 	/// Writes a <paramref name="value"/> to the <paramref name="source"/>
 	/// and advances the <paramref name="source"/> by <see langword="sizeof"/>(<typeparamref name="T"/>).
 	/// </summary>
+	/// <remarks>
+	/// Same as: (but remove the duplicate range check)
+	/// <code>
+	///	MemoryMarshal.Write&lt;T&gt;(source, value);
+	///	source = source.Slice(sizeof(T));
+	/// </code>
+	/// </remarks>
 	/// <exception cref="ArgumentOutOfRangeException"/>
-	public static unsafe void WriteAndSlice<T>(this scoped ref Span<byte> source, T value) where T : unmanaged {
+	public static unsafe void WriteAndSlice<T>(this scoped ref Span<byte> source, in T value) where T : unmanaged {
 		ref var p2 = ref MemoryMarshal.GetReference(source);
 		source = source.Slice(sizeof(T)); // range check here
 		Unsafe.As<byte, T>(ref p2) = value;
 	}
 	/// <summary>
+	/// Copy <paramref name="value"/> to the <paramref name="source"/>
+	/// and advances the <paramref name="source"/> by <see cref="ReadOnlySpan{T}.Length"/> of <paramref name="value"/>.
+	/// </summary>
+	/// <remarks>
+	/// Same as: (but remove duplicate range checks)
+	/// <code>
+	///	value.CopyTo(source);
+	///	source = source.Slice(value.Length);
+	/// </code>
+	/// </remarks>
+	/// <exception cref="ArgumentOutOfRangeException"/>
+	public static unsafe void WriteAndSlice(this scoped ref Span<byte> source, ReadOnlySpan<byte> value) {
+		ref var p2 = ref MemoryMarshal.GetReference(source);
+		source = source.Slice(value.Length); // range check here
+		value.CopyToUnchecked(ref p2);
+	}
+	/// <summary>
 	/// Copies <paramref name="length"/> bytes from the <paramref name="source"/> to the <paramref name="destination"/>
 	/// and advances both two spans by <paramref name="length"/>.
 	/// </summary>
+	/// <remarks>
+	/// Same as: (but remove duplicate range checks)
+	/// <code>
+	///	source.CopyTo(destination[..length]);
+	///	source = source.Slice(length);
+	///	destination = destination.Slice(length);
+	/// </code>
+	/// </remarks>
 	/// <exception cref="ArgumentOutOfRangeException"/>
 	public static unsafe void CopyToAndSlice<T>(this scoped ref ReadOnlySpan<T> source, scoped ref Span<T> destination, int length) where T : unmanaged {
 		ref var p = ref MemoryMarshal.GetReference(source);
@@ -96,20 +158,6 @@ public static class SpanExtensions {
 		source = source.Slice(length); // range check here
 		destination = destination.Slice(length); // and here
 		MemoryMarshal.CreateReadOnlySpan(ref p, length).CopyToUnchecked(ref p2);
-	}
-	/// <summary>
-	/// Copies <paramref name="source"/> to the <paramref name="destination"/>
-	/// and advances the <paramref name="destination"/> by <paramref name="source"/>.Length.
-	/// </summary>
-	/// <exception cref="ArgumentOutOfRangeException"/>
-	public static unsafe void CopyToAndSliceDest<T>(this scoped ReadOnlySpan<T> source, scoped ref Span<T> destination) where T : unmanaged {
-		ref var p2 = ref MemoryMarshal.GetReference(destination);
-		destination = destination.Slice(source.Length); // range check here
-		source.CopyToUnchecked(ref p2);
-	}
-	/// <inheritdoc cref="CopyToAndSliceDest{T}(ReadOnlySpan{T}, ref Span{T})"/>
-	public static unsafe void CopyToAndSliceDest<T>(this scoped Span<T> source, scoped ref Span<T> destination) where T : unmanaged {
-		CopyToAndSliceDest((ReadOnlySpan<T>)source, ref destination);
 	}
 
 	/// <summary>

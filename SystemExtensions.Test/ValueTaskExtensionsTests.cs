@@ -44,6 +44,11 @@ public class ValueTaskExtensionsTests {
 			Assert.AreEqual(1, v.Result);
 			second = true;
 		}));
+		DoAssertWithResult(ValueTaskAsync().ContinueWith(v => {
+			Assert.IsTrue(v.IsCompletedSuccessfully);
+			second = true;
+			return "2";
+		}));
 		DoAssertWithResult(ValueTaskIntAsync().ContinueWith(v => {
 			Assert.IsTrue(v.IsCompletedSuccessfully);
 			Assert.AreEqual(1, v.Result);
@@ -84,7 +89,7 @@ public class ValueTaskExtensionsTests {
 			first = false;
 		}
 
-		DoAssert(ValueTaskAsync().ContinueWith(() => second = true, cancel));
+		DoAssert(ValueTaskAsync().ContinueWith(() => { second = true; }, cancel));
 		DoAssert(ValueTaskAsync().ContinueWith(v => {
 			Assert.IsTrue(v.IsCompletedSuccessfully);
 			second = true;
@@ -93,6 +98,11 @@ public class ValueTaskExtensionsTests {
 			Assert.IsTrue(v.IsCompletedSuccessfully);
 			Assert.AreEqual(1, v.Result);
 			second = true;
+		}, cancel));
+		DoAssertWithResult(ValueTaskAsync().ContinueWith(v => {
+			Assert.IsTrue(v.IsCompletedSuccessfully);
+			second = true;
+			return "2";
 		}, cancel));
 		DoAssertWithResult(ValueTaskIntAsync().ContinueWith(v => {
 			Assert.IsTrue(v.IsCompletedSuccessfully);
@@ -149,6 +159,15 @@ public class ValueTaskExtensionsTests {
 			cancel.Cancel(); // Simulate a cancellation during the continuation
 			c.ThrowIfCancellationRequested();
 			second = true;
+		}, cancel.Token));
+		cancel = new CancellationTokenSource();
+		DoAssertWithResult(ValueTaskAsync().ContinueWith((v, c) => {
+			Assert.IsTrue(v.IsCompletedSuccessfully);
+			Assert.AreEqual(cancel.Token, c);
+			cancel.Cancel(); // Simulate a cancellation during the continuation
+			c.ThrowIfCancellationRequested();
+			second = true;
+			return "2";
 		}, cancel.Token));
 		cancel = new CancellationTokenSource();
 		DoAssertWithResult(ValueTaskIntAsync().ContinueWith((v, c) => {

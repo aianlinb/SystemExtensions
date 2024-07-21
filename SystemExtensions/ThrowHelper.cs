@@ -21,12 +21,12 @@ public static class ThrowHelper {
 	/// <summary>
 	/// Throws an <see cref="Exception"/> of the specified type <typeparamref name="T"/> with its parameterless constructor
 	/// </summary>
-	[DoesNotReturn]
+	[DoesNotReturn, DebuggerNonUserCode]
 	public static void Throw<T>() where T : Exception, new() => throw new T();
 	/// <summary>
 	/// Throws an <see cref="Exception"/> of the specified type <typeparamref name="T"/> instantiated with <paramref name="arguments"/>
 	/// </summary>
-	[DoesNotReturn]
+	[DoesNotReturn, DebuggerNonUserCode]
 	public static void Throw<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T>(params object?[] arguments) where T : Exception => throw (Activator.CreateInstance(typeof(T), arguments) as T)!;
 
 	/// <summary>
@@ -37,7 +37,7 @@ public static class ThrowHelper {
 	/// See <see cref="CallerArgumentExpressionAttribute"/>.
 	/// </remarks>
 	/// <exception cref="ArgumentOutOfRangeException"/>
-	[DoesNotReturn]
+	[DoesNotReturn, DebuggerNonUserCode]
 	public static void ThrowArgumentOutOfRange(object? actualValue = null, string? message = null, [CallerArgumentExpression(nameof(actualValue))] string? paramName = null) {
 		throw ArgumentOutOfRange(actualValue, message, paramName);
 	}
@@ -57,7 +57,7 @@ public static class ThrowHelper {
 	/// <param name="exception">
 	/// The <see cref="Exception"/> catched to rethrow
 	/// </param>
-	[DoesNotReturn]
+	[DoesNotReturn, DebuggerNonUserCode]
 	public static void ThrowKeepStackTrace(this Exception exception) {
 		ExceptionDispatchInfo.Capture(exception).Throw();
 	}

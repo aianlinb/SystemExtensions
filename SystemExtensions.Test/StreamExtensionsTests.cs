@@ -114,6 +114,7 @@ public class StreamExtensionsTests {
 		// Arrange
 		var stream = new MemoryStream();
 		Assert.AreEqual(0, stream.ReadToEnd().Length);
+		Assert.AreEqual(0, stream.ReadToEndAsync().GetAwaiter().GetResult().Length);
 
 		var expected = new byte[Random.Shared.Next(1, 2000000)];
 		Random.Shared.NextBytes(expected);
@@ -123,9 +124,11 @@ public class StreamExtensionsTests {
 		stream.Position = pos;
 
 		// Act
-		var result = stream.ReadToEnd();
+		var result1 = stream.ReadToEnd();
+		var result2 = stream.ReadToEndAsync().GetAwaiter().GetResult();
 
 		// Assert
-		new ReadOnlySpan<byte>(expected, pos, expected.Length - pos).SequenceEqual(result);
+		new ReadOnlySpan<byte>(expected).Slice(pos).SequenceEqual(result1);
+		new ReadOnlySpan<byte>(expected).Slice(pos).SequenceEqual(result2);
 	}
 }

@@ -1,7 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 
 namespace SystemExtensions.Tests;
-using System = global::System;
 
 [TestClass]
 public class SpanExtensionsTests {
@@ -24,30 +23,41 @@ public class SpanExtensionsTests {
 		// Arrange
 		var input = new byte[6];
 		Random.Shared.NextBytes(input);
-		var span = new ReadOnlySpan<byte>(input);
-		var spanSnapshot = span;
+		var span1 = new ReadOnlySpan<byte>(input);
+		var span2 = new ReadOnlySpan<byte>(input);
+		var spanSnapshot1 = span1;
+		var spanSnapshot2 = span2;
 
 		// Act
-		int actual = span.ReadAndSlice<int>();
+		int actual1 = span1.ReadAndSlice<int>();
+		var actual2 = span2.ReadAndSlice(5);
 
 		// Assert
-		Assert.AreEqual(MemoryMarshal.Read<int>(input), actual);
-		Assert.IsTrue(span == spanSnapshot[sizeof(int)..]);
+		Assert.AreEqual(MemoryMarshal.Read<int>(input), actual1);
+		Assert.IsTrue(span1 == spanSnapshot1[sizeof(int)..]);
+
+		Assert.IsTrue(spanSnapshot2[..5] == actual2);
+		Assert.IsTrue(span2 == spanSnapshot2[5..]);
 	}
 	[TestMethod]
 	public void WriteAndSlice_Test() {
 		// Arrange
-		var output = new byte[5];
+		var output1 = new byte[5];
 		int expected = Random.Shared.Next();
-		var span = new Span<byte>(output);
-		var spanSnapshot = span;
+		var span1 = new Span<byte>(output1);
+		var span2 = new Span<byte>(new byte[5]);
+		var spanSnapshot1 = span1;
+		var spanSnapshot2 = span2;
 
 		// Act
-		span.WriteAndSlice(expected);
+		span1.WriteAndSlice(expected);
+		span2.WriteAndSlice([1, 2]);
 
 		// Assert
-		Assert.AreEqual(expected, MemoryMarshal.Read<int>(output));
-		Assert.IsTrue(span == spanSnapshot[sizeof(int)..]);
+		Assert.AreEqual(expected, MemoryMarshal.Read<int>(output1));
+		Assert.IsTrue(spanSnapshot1[sizeof(int)..] == span1);
+		Assert.IsTrue(((ReadOnlySpan<byte>)[1, 2]).SequenceEqual(spanSnapshot2[..2]));
+		Assert.IsTrue(spanSnapshot2[2..] == span2);
 	}
 	[TestMethod]
 	[DataRow(-1)]
@@ -78,25 +88,6 @@ public class SpanExtensionsTests {
 		Assert.IsTrue(spanshot1[..length].SequenceEqual(spanshot2[..length]));
 		Assert.IsTrue(span1 == spanshot1[length..]);
 		Assert.IsTrue(span2 == spanshot2[length..]);
-	}
-	[TestMethod]
-	public void CopyToAndSliceDest_Test() {
-		// Arrange
-		var input = new byte[5];
-		var output = new byte[10];
-		Random.Shared.NextBytes(input);
-		var span1 = new ReadOnlySpan<byte>(input);
-		var span2 = new Span<byte>(output);
-		var snapshot1 = span1;
-		var snapshot2 = span2;
-
-		// Act
-		span1.CopyToAndSliceDest(ref span2);
-
-		// Assert
-		Assert.IsTrue(span1.SequenceEqual(snapshot2[..input.Length]));
-		Assert.IsTrue(snapshot1 == span1);
-		Assert.IsTrue(span2 == snapshot2[input.Length..]);
 	}
 
 	[TestMethod]

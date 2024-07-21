@@ -2,22 +2,25 @@ namespace SystemExtensions.Tests;
 [TestClass]
 public class SubStreamTests {
 	[TestMethod]
-	[DataRow(0, 5)]
-	[DataRow(0, 999999)]
-	[DataRow(10, 300)]
-	[DataRow(999999, 0)]
+	[DataRow(0, 9999)]
+	[DataRow(10, 1)]
+	[DataRow(9999, 0)]
+	[DataRow(1, -1)]
 	public void Rescope_Test(long offset, long length) {
 		// Arrange
-		var testStream = new MemoryStream(new byte[999999]);
-		var subStream = new SubStream(testStream, offset, length);
+		var testStream = new MemoryStream(new byte[9999]);
+		var subStream = new SubStream(testStream, 0);
 
-		// Act+Assert
-		subStream.Rescope(5, 5);
-		Assert.AreEqual(5, subStream.Offset);
-		Assert.AreEqual(5, subStream.Length);
-		subStream.Rescope(new(1, ^3));
-		Assert.AreEqual(1, subStream.Offset);
-		Assert.AreEqual((^3).GetOffset((int)testStream.Length), subStream.EndPosition);
+		// Act + Assert
+		subStream.Rescope(offset, length);
+		Assert.AreEqual(offset, subStream.Offset);
+		if (length == -1) {
+			Assert.AreEqual(-1, subStream.EndOffset);
+			Assert.AreEqual(testStream.Length - offset, subStream.Length);
+		} else {
+			Assert.AreEqual(offset + length, subStream.EndOffset);
+			Assert.AreEqual(length, subStream.Length);
+		}
 	}
 
 	[TestMethod]
@@ -48,7 +51,7 @@ public class SubStreamTests {
 		// Assert ReadOnlySubStream
 		var readOnlySubStream = new ReadOnlySubStream(testStream, offset, length);
 		Assert.ThrowsException<ArgumentOutOfRangeException>(() => readOnlySubStream.Seek(-1, SeekOrigin.Begin));
-		Assert.ThrowsException<ArgumentOutOfRangeException>(() => readOnlySubStream.Seek(length + 1, SeekOrigin.Begin));
+		Assert.ThrowsException<EndOfStreamException>(() => readOnlySubStream.Seek(length + 1, SeekOrigin.Begin));
 	}
 
 	[TestMethod]
@@ -190,17 +193,17 @@ public class SubStreamTests {
 		// Assert
 		Assert.AreEqual(offset, subStream.Offset);
 		Assert.AreEqual(length, subStream.Length);
-		Assert.AreEqual(offset + length, subStream.EndPosition);
+		Assert.AreEqual(offset + length, subStream.EndOffset);
 		Assert.AreEqual(Math.Max(offset, basePosition), testStream.Position);
 		Assert.AreEqual(testStream.CanRead, subStream.CanRead);
 		Assert.AreEqual(testStream.CanSeek, subStream.CanSeek);
 		Assert.AreEqual(writable, subStream.CanWrite);
 		Assert.AreEqual(testStream.CanTimeout, subStream.CanTimeout);
+		Assert.IsFalse(new ReadOnlySubStream(testStream, offset, length).CanWrite);
 
 		subStream.Dispose();
-		Assert.AreEqual(false, subStream.CanRead);
+		Assert.IsFalse(subStream.CanRead);
+		Assert.IsFalse(testStream.CanRead);
 		Assert.ThrowsException<ObjectDisposedException>(() => subStream.BaseStream);
-
-		Assert.AreEqual(false, new ReadOnlySubStream(testStream, offset, length).CanWrite);
 	}
 }

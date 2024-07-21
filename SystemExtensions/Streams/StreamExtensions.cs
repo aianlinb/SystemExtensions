@@ -2,7 +2,9 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
+using SystemExtensions.Collections;
 using SystemExtensions.Spans;
+using SystemExtensions.Tasks;
 
 namespace SystemExtensions.Streams;
 /// <summary>
@@ -77,32 +79,46 @@ public static class StreamExtensions {
 		Read(stream, CollectionsMarshal.AsSpan(list).Slice(offset, length));
 	}
 
-	public static unsafe byte[] ReadToEnd(this Stream stream) {
+	public static byte[] ReadToEnd(this Stream stream) {
 		if (!stream.CanSeek)
-			return ReadToEndUnseekable(stream);
+			return ReadToEndUnseekable();
 		var buffer = GC.AllocateUninitializedArray<byte>(checked((int)(stream.Length - stream.Position)));
 		stream.ReadExactly(buffer);
 		return buffer;
-	}
-	private static unsafe byte[] ReadToEndUnseekable(Stream stream) {
-		var buffer = ArrayPool<byte>.Shared.Rent(4096);
-		try {
+
+		byte[] ReadToEndUnseekable() {
+			using var renter = new ArrayPoolRenter<byte>(4096);
+			var buffer = renter.Array;
 			var l = 0;
 			int lastRead;
 			do {
-				if (buffer.Length == l) {
-					byte[] toReturn = buffer;
-					buffer = ArrayPool<byte>.Shared.Rent(buffer.Length + 1);
-					new ReadOnlySpan<byte>(toReturn).CopyToUnchecked(ref MemoryMarshal.GetArrayDataReference(buffer));
-					ArrayPool<byte>.Shared.Return(toReturn);
-				}
-
+				if (l == buffer.Length)
+					buffer = renter.Resize(buffer.Length + 1, buffer.Length);
 				lastRead = stream.Read(buffer, l, buffer.Length - l);
 				l += lastRead;
 			} while (lastRead > 0);
 			return buffer[..l];
-		} finally {
-			ArrayPool<byte>.Shared.Return(buffer);
+		}
+	}
+	public static Task<byte[]> ReadToEndAsync(this Stream stream) {
+		if (!stream.CanSeek)
+			return ReadToEndUnseekableAsync();
+		var buffer = GC.AllocateUninitializedArray<byte>(checked((int)(stream.Length - stream.Position)));
+		return stream.ReadExactlyAsync(buffer).ContinueWith(_ => buffer).AsTask();
+
+		async Task<byte[]> ReadToEndUnseekableAsync() {
+			using var renter = new ArrayPoolRenter<byte>(4096);
+			var memory = new Memory<byte>(renter.Array);
+			int lastRead;
+			do {
+				if (memory.IsEmpty) {
+					var length = renter.Array.Length;
+					memory = new Memory<byte>(renter.Resize(length + 1, length)).Slice(length);
+				}
+				lastRead = await stream.ReadAsync(memory).ConfigureAwait(false);
+				memory = memory.Slice(lastRead);
+			} while (lastRead > 0);
+			return renter.Array[..(renter.Array.Length - memory.Length)];
 		}
 	}
 
