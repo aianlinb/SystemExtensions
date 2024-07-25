@@ -4,7 +4,7 @@ using Microsoft.Win32.SafeHandles;
 
 using SystemExtensions.Spans;
 
-namespace SystemExtensions.System;
+namespace SystemExtensions.System.IO;
 using System = global::System;
 
 using RandomAccess = corelib::System.IO.RandomAccess;

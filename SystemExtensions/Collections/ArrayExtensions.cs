@@ -56,4 +56,28 @@ public static class ArrayExtensions {
 		result._size = count;
 		return Unsafe.As<List<T>>(result);
 	}
+
+	/// <summary>
+	/// Creates a <see cref="MemoryStream"/> that use <paramref name="buffer"/> as its underlying array.
+	/// And with an additional parameter <paramref name="expandable"/> than the original constructor: <see cref="MemoryStream(byte[], int, int, bool, bool)"/>.
+	/// </summary>
+	/// <param name="buffer">The underlying buffer for creating the <see cref="MemoryStream"/>.</param>
+	/// <param name="index">
+	/// The index of the <paramref name="buffer"/> at which the stream begins.
+	/// <para>Must be 0 if <paramref name="expandable"/> is <see langword="true"/> due to the internal implementation.</para>
+	/// </param>
+	/// <param name="count">The initial length of the stream in bytes</param>
+	/// <param name="writable">The setting of the <see cref="MemoryStream.CanWrite"/> property, which determines whether the stream supports writing.</param>
+	/// <param name="publiclyVisible">Whether allows the underlying array of the stream to be returned by <see cref="MemoryStream.GetBuffer"/> or <see cref="MemoryStream.TryGetBuffer"/>.</param>
+	/// <param name="expandable">Whether the stream can be expanded. That is, whether the <see cref="MemoryStream.Capacity"/> of this stream can be changed.</param>
+	/// <returns>The created <see cref="MemoryStream"/></returns>
+	public static MemoryStream AsStream(this byte[] buffer, int index = 0, int count = -1, bool writable = true, bool publiclyVisible = false, bool expandable = false) {
+		if (count == -1)
+			count = unchecked(buffer.Length - index);
+		if (expandable && index != 0)
+			ThrowHelper.Throw<ArgumentException>("The expandable is true while index != 0", nameof(expandable));
+		var ms = new MemoryStream(buffer, index, count, writable, publiclyVisible);
+		Unsafe.As<corelib::System.IO.MemoryStream>(ms)._expandable = expandable;
+		return ms;
+	}
 }

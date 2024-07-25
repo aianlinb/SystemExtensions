@@ -87,7 +87,7 @@ public class UnseekableSubStream(Stream baseStream, long length = -1) : Stream {
 		baseStream.WriteByte(value);
 		++position;
 	}
-	public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken = default) {
+	public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) {
 		CheckLengthBeforeWrite(count);
 #pragma warning disable CA1835
 		await baseStream.WriteAsync(buffer, offset, count, cancellationToken).ConfigureAwait(false);

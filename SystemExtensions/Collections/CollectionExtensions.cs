@@ -1,8 +1,12 @@
-﻿using System.Collections;
+﻿extern alias corelib;
+
+using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace SystemExtensions.Collections;
+
 public static class CollectionExtensions {
 	public static int IndexOf<T>(this IEnumerable<T> source, T value) {
 		switch (source) {
@@ -42,11 +46,32 @@ public static class CollectionExtensions {
 	}
 
 	/// <summary>
+	/// Get a <see cref="Span{T}"/> view over a <see cref="List{T}"/>'s data.
+	/// </summary>
+	/// <remarks>
+	/// While the returned <see cref="Span{T}"/> is in use, items should not be added/removed to/from the <paramref name="list"/>,
+	/// and the <see cref="List{T}.Capacity"/> should not be changed.
+	/// <para>Same as <see cref="CollectionsMarshal.AsSpan"/></para>
+	/// </remarks>
+	public static Span<T> AsSpan<T>(this List<T> list) => CollectionsMarshal.AsSpan(list);
+	/// <summary>
+	/// Get a <see cref="Memory{T}"/> view over a <see cref="List{T}"/>'s data.
+	/// </summary>
+	/// <remarks>
+	/// While the returned <see cref="Memory{T}"/> is in use, items should not be added/removed to/from the <paramref name="list"/>,
+	/// and the <see cref="List{T}.Capacity"/> should not be changed.
+	/// </remarks>
+	public static Memory<T> AsMemory<T>(this List<T> list) {
+		var l = Unsafe.As<corelib::System.Collections.Generic.List<T>>(list);
+		return new(l._items, 0, l._size);
+	}
+
+	/// <summary>
 	/// Returns a wrapper with <see cref="IEnumerable{T}.GetEnumerator"/> method that returns <paramref name="source"/> as is.
 	/// </summary>
 	/// <remarks>
-	/// Note that the returned <see cref="IEnumerable{T}"/> cannot be enumerate repeatedly.
-	/// And it will start from current state of the <see cref="IEnumerator{T}"/> passed.
+	/// Note that the returned <see cref="IEnumerable{T}"/> cannot be enumerated repeatedly (unless calling <see cref="IEnumerator.Reset"/> of <paramref name="source"/>).
+	/// And it will start from current state of the <paramref name="source"/>.
 	/// </remarks>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static EnumeratorWrapper<T> AsEnumerable<T>(this IEnumerator<T> source) => new(source);

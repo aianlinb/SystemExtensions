@@ -82,13 +82,7 @@ public static class Utils {
 	/// </summary>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static long GetOffset(this scoped in Index index, long length) {
-		Debug.Assert(length >= 0);
-		long value = Unsafe.As<Index, int>(ref Unsafe.AsRef(in index)); // local copy
-		if (value < 0) // index.IsFromEnd
-			unchecked {
-				value += length + 1; // length - ~value == value + length + 1
-			}
-		return value;
+		return ((LongIndex)index).GetOffset(length);
 	}
 
 	/// <summary>
@@ -96,23 +90,7 @@ public static class Utils {
 	/// </summary>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static (long Offset, long Length) GetOffsetAndLength(this scoped in Range range, long length) {
-		Debug.Assert(length >= 0);
-		// Since Range is actually two Index (which is actually an int)
-		long start = Unsafe.As<Range, int>(ref Unsafe.AsRef(in range)); // local copy and cast to long
-		long end = Unsafe.Add(ref Unsafe.As<Range, int>(ref Unsafe.AsRef(in range)), 1);
-
-		unchecked {
-			// See Index.GetOffset
-			// We don't cache length + 1 here because it's rare that both Start and End are IsFromEnd
-			if (start < 0)
-				start += length + 1; // length - ~start == start + length + 1
-			if (end < 0)
-				end += length + 1;
-
-			if ((ulong)end > (ulong)length || (ulong)start > (ulong)end)
-				ThrowHelper.ThrowArgumentOutOfRange(length);
-		}
-		return (start, end - start);
+		return ((LongRange)range).GetOffsetAndLength(length);
 	}
 
 	/// <summary>
@@ -144,23 +122,7 @@ public static class Utils {
 	/// </summary>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static (long Offset, long End) GetOffsetAndEnd(this scoped in Range range, long length) {
-		Debug.Assert(length >= 0);
-		// Since Range is actually two Index (which is actually an int)
-		long start = Unsafe.As<Range, int>(ref Unsafe.AsRef(in range)); // local copy and cast to long
-		long end = Unsafe.Add(ref Unsafe.As<Range, int>(ref Unsafe.AsRef(in range)), 1);
-
-		unchecked {
-			// See Index.GetOffset
-			// We don't cache length + 1 here because it's rare that both Start and End are IsFromEnd
-			if (start < 0)
-				start += length + 1; // length - ~start == start + length + 1
-			if (end < 0)
-				end += length + 1;
-
-			if ((ulong)end > (ulong)length || (ulong)start > (ulong)end)
-				ThrowHelper.ThrowArgumentOutOfRange(length);
-		}
-		return (start, end);
+		return ((LongRange)range).GetOffsetAndEnd(length);
 	}
 
 	/// <summary>

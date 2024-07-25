@@ -10,15 +10,19 @@ namespace SystemExtensions;
 /// </summary>
 /// <param name="start">Represent the inclusive start <see cref="LongIndex"/> of the <see cref="LongRange"/>.</param>
 /// <param name="end">Represent the exclusive end <see cref="LongIndex"/> of the <see cref="LongRange"/>.</param>
+[method: MethodImpl(MethodImplOptions.AggressiveInlining)]
 public readonly struct LongRange(LongIndex start, LongIndex end) : IEquatable<LongRange>, IEquatable<Range> {
 	/// <summary>Represent the inclusive start <see cref="LongIndex"/> of the <see cref="LongRange"/>.</summary>
 	public LongIndex Start { get; } = start;
 	/// <summary>Represent the exclusive end <see cref="LongIndex"/> of the <see cref="LongRange"/>.</summary>
 	public LongIndex End { get; } = end;
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public override bool Equals([NotNullWhen(true)] object? obj) =>
 		obj is LongRange r && Start.Equals(r.Start) && End.Equals(r.End);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool Equals(LongRange other) => Start.Equals(other.Start) && End.Equals(other.End);
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool Equals(Range other) => Start.Equals(other.Start) && End.Equals(other.End);
 
 	/// <summary>Returns the hash code for this instance.</summary>
@@ -62,16 +66,20 @@ public readonly struct LongRange(LongIndex start, LongIndex end) : IEquatable<Lo
 	}
 
 	/// <summary>Converts <see cref="Range"/> to a <see cref="LongRange"/>.</summary>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static implicit operator LongRange(Range value) => new(value.Start, value.End);
 	/// <summary>
 	/// Converts <see cref="LongRange"/> to a <see cref="Range"/> if the values of <see cref="Start"/> and <see cref="End"/> are both within the range of <see cref="int"/>.
 	/// </summary>
 	/// <exception cref="OverflowException">The value is outside the range of <see cref="int"/>.</exception>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static explicit operator Range(LongRange value) => new((Index)value.Start, (Index)value.End);
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static bool operator ==(LongRange left, LongRange right) {
 		return left.Equals(right);
 	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static bool operator !=(LongRange left, LongRange right) {
 		return !(left == right);
 	}

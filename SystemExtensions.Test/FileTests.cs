@@ -1,5 +1,5 @@
 ﻿namespace SystemExtensions.Tests;
-using File = SystemExtensions.System.File;
+using File = SystemExtensions.System.IO.File;
 using System = global::System;
 
 [TestClass]

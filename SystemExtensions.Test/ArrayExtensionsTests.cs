@@ -75,4 +75,21 @@ public class ArrayExtensionsTests {
 			Assert.AreEqual(0, result.Count);
 		Assert.AreEqual(array.Length, result.Capacity);
 	}
+
+	[TestMethod]
+	public void ByteArrayAsStream_Test() {
+		// Arrange
+		byte[] buffer = [1, 2, 3];
+
+		// Act
+		using var ms = buffer.AsStream(0, -1, false, true, true);
+
+		// Assert
+		Assert.AreEqual(buffer.Length, ms.Length);
+		Assert.AreEqual(buffer.Length, ms.Capacity);
+		Assert.IsFalse(ms.CanWrite);
+		Assert.AreSame(buffer, ms.GetBuffer());
+		ms.Capacity = 5;
+		Assert.AreNotSame(buffer, ms.GetBuffer());
+	}
 }

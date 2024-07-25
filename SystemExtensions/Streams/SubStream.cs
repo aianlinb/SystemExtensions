@@ -107,7 +107,7 @@ public class SubStream : Stream, IEquatable<SubStream> {
 	public override int Read(byte[] buffer, int offset, int count) => _baseStream!.Read(buffer, offset, CheckLengthBeforeRead(count));
 	public override int Read(scoped Span<byte> buffer) => _baseStream!.Read(buffer[..CheckLengthBeforeRead(buffer.Length)]);
 	public override int ReadByte() => (ulong)BaseStream.Position >= unchecked((ulong)EndOffset) ? -1 : _baseStream.ReadByte();
-	public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken = default) => _baseStream!.ReadAsync(buffer, offset, CheckLengthBeforeRead(count), cancellationToken);
+	public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) => _baseStream!.ReadAsync(buffer, offset, CheckLengthBeforeRead(count), cancellationToken);
 	public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) => _baseStream!.ReadAsync(buffer[..CheckLengthBeforeRead(buffer.Length)], cancellationToken);
 
 	public override long Position {

@@ -1,3 +1,8 @@
+using System.Buffers;
+using System.Data;
+
+using SystemExtensions.Streams;
+
 namespace SystemExtensions.Tests;
 [TestClass]
 public class StreamExtensionsTests {
@@ -130,5 +135,75 @@ public class StreamExtensionsTests {
 		// Assert
 		new ReadOnlySpan<byte>(expected).Slice(pos).SequenceEqual(result1);
 		new ReadOnlySpan<byte>(expected).Slice(pos).SequenceEqual(result2);
+	}
+
+	[TestMethod]
+	[DataRow(false)]
+	[DataRow(true)]
+	public void BufferWriterWrapper_Test(bool getMemory) {
+		// Arrange
+		using var ms = new MemoryStream(4);
+		var bww = ms.AsIBufferWriter();
+		ReadOnlySpan<byte> data = [1, 2, 3];
+
+		// Act + Assert
+		data.CopyTo(getMemory ? bww.GetMemory().Span : bww.GetSpan());
+		bww.Advance(data.Length);
+		Assert.AreEqual(4, ms.Capacity); // not changed
+		Assert.AreEqual(data.Length, ms.Length);
+
+		data.CopyTo(getMemory ? bww.GetMemory(5).Span : bww.GetSpan(5));
+		Assert.IsTrue(data.Length + 5 <= ms.Capacity); // expanded
+		bww.Advance(data.Length);
+		Assert.AreEqual(data.Length + data.Length, ms.Length);
+
+		var result = ms.ToArray().AsReadOnlySpan();
+		Assert.IsTrue(data.SequenceEqual(result[..data.Length]));
+		Assert.IsTrue(data.SequenceEqual(result.Slice(data.Length)));
+
+		ms.SetLength(2);
+		ms.Capacity = 2;
+		Assert.AreNotEqual(0, (getMemory ? bww.GetMemory().Span : bww.GetSpan()).Length);
+		Assert.IsTrue(3 <= ms.Capacity); // expanded
+	}
+
+	[TestMethod]
+	public async Task BufferWriterStream_Test() {
+		// Arrange
+		var abw = new ArrayBufferWriter<byte>();
+		var bws = abw.AsStream();
+		byte[] data = [1, 2, 3];
+
+		// Act + Assert
+		Assert.IsTrue(bws.CanWrite);
+		Assert.IsFalse(bws.CanRead);
+		Assert.IsFalse(bws.CanSeek);
+		Assert.ThrowsException<NotSupportedException>(() => bws.Position = 1);
+		Assert.ThrowsException<NotSupportedException>(() => bws.Read([], default, default));
+		Assert.ThrowsException<NotSupportedException>(() => bws.Read(default));
+		await Assert.ThrowsExceptionAsync<NotSupportedException>(() => bws.ReadAsync(default).AsTask());
+		await Assert.ThrowsExceptionAsync<NotSupportedException>(() => bws.ReadAsync([], default, default, default));
+		Assert.ThrowsException<NotSupportedException>(() => bws.BeginRead([], default, default, default, default));
+		Assert.ThrowsException<NotSupportedException>(() => bws.Seek(default, default));
+		Assert.ThrowsException<NotSupportedException>(() => bws.SetLength(default));
+
+		bws.Write(data, 0, 2);
+		Assert.IsTrue(abw.WrittenSpan.SequenceEqual(new(data, 0, 2)));
+		abw.ResetWrittenCount();
+#pragma warning disable CA1835
+		await bws.WriteAsync(data, 0, 2);
+#pragma warning restore CA1835
+		Assert.IsTrue(abw.WrittenSpan.SequenceEqual(new(data, 0, 2)));
+		abw.ResetWrittenCount();
+
+		bws.Write(data);
+		Assert.IsTrue(abw.WrittenSpan.SequenceEqual(data));
+		abw.ResetWrittenCount();
+		await bws.WriteAsync(data);
+		Assert.IsTrue(abw.WrittenSpan.SequenceEqual(data));
+
+		bws.WriteByte(7);
+		Assert.AreEqual(data.Length + 1, abw.WrittenCount);
+		Assert.AreEqual(7, abw.WrittenSpan[data.Length]);
 	}
 }

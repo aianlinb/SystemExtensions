@@ -6,7 +6,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace SystemExtensions.Spans;
-using System = global::System;
 /// <remarks>
 /// Some of the methods in this class have the same signature as the methods in <see cref="MemoryExtensions"/> without the <see cref="IEquatable{T}"/> limitation.<br />
 /// Use those in <see cref="MemoryExtensions"/> for T that implements <see cref="IEquatable{T}"/> instead, for better performance.
@@ -15,7 +14,9 @@ public static class SpanExtensions {
 	public static ReadOnlySpan<T> AsReadOnly<T>(this Span<T> span) => span;
 	public static ReadOnlyMemory<T> AsReadOnly<T>(this Memory<T> memory) => memory;
 	public static ReadOnlySpan<T> AsReadOnlySpan<T>(this T[] array) => array;
+	public static ReadOnlySpan<T> AsReadOnlySpan<T>(this T[] array, int start, int length) => new(array, start, length);
 	public static ReadOnlyMemory<T> AsReadOnlyMemory<T>(this T[] array) => array;
+	public static ReadOnlyMemory<T> AsReadOnlyMemory<T>(this T[] array, int start, int length) => new(array, start, length);
 
 	/// <summary>
 	/// Returns a <see cref="Span{T}"/> of <see cref="byte"/> that represents the memory of the by reference parameter <paramref name="value"/>.

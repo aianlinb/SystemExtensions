@@ -23,6 +23,7 @@ public readonly struct LongIndex : IEquatable<LongIndex>, IEquatable<Index> {
 		else
 			_value = value;
 	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private LongIndex(long value) {
 		_value = value;
 	}
@@ -66,7 +67,7 @@ public readonly struct LongIndex : IEquatable<LongIndex>, IEquatable<Index> {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public long GetOffset(long length) {
 		var offset = _value;
-		if (IsFromEnd) unchecked {
+		if (offset < 0L /*IsFromEnd*/) unchecked {
 			offset += length + 1L;
 			// offset = length - (~value)
 			// offset = length + (~(~value) + 1)
@@ -75,8 +76,11 @@ public readonly struct LongIndex : IEquatable<LongIndex>, IEquatable<Index> {
 		return offset;
 	}
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public override bool Equals([NotNullWhen(true)] object? obj) => obj is LongIndex li && _value == li._value;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool Equals(LongIndex other) => _value == other._value;
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public bool Equals(Index other) => _value == Unsafe.As<Index, int>(ref other);
 
 	/// <summary>Returns the hash code for this instance.</summary>
@@ -90,22 +94,28 @@ public readonly struct LongIndex : IEquatable<LongIndex>, IEquatable<Index> {
 	}
 
 	/// <summary>Converts integer number to a <see cref="LongIndex"/>.</summary>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static implicit operator LongIndex(long value) => FromStart(value);
 	/// <summary>Converts integer number to a <see cref="LongIndex"/>.</summary>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static implicit operator LongIndex(int value) => (long)value;
 	/// <summary>Converts <see cref="Index"/> to a <see cref="LongIndex"/>.</summary>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static implicit operator LongIndex(Index value) => new(Unsafe.As<Index, int>(ref value));
 	/// <summary>
 	/// Converts <see cref="LongIndex"/> to an <see cref="Index"/> if the value is within the range of <see cref="int"/>.
 	/// </summary>
 	/// <exception cref="OverflowException">The value is outside the range of <see cref="int"/>.</exception>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 #pragma warning disable CS9193
 	public static explicit operator Index(LongIndex value) => Unsafe.As<int, Index>(ref Unsafe.AsRef(checked((int)value._value)));
 #pragma warning restore CS9193
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static bool operator ==(LongIndex left, LongIndex right) {
 		return left.Equals(right);
 	}
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static bool operator !=(LongIndex left, LongIndex right) {
 		return !(left == right);
 	}

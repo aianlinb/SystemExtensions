@@ -185,10 +185,21 @@ public static class StreamExtensions {
 	/// See <see cref="SubStream"/>
 	/// </summary>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static SubStream Slice(this Stream stream, long offset, long length) => new(stream, offset, length);
+	public static SubStream Slice(this Stream stream, long offset, long length = -1) => new(stream, offset, length);
 	/// <summary>
 	/// See <see cref="SubStream"/>
 	/// </summary>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static SubStream Slice(this Stream stream, Range range) => new(stream, range);
+	public static SubStream Slice(this Stream stream, LongRange range) => new(stream, range);
+	/// <summary>
+	/// See <see cref="BufferWriterWrapper"/>
+	/// </summary>
+	/// <returns><see cref="IBufferWriter{T}"/> of <see cref="byte"/></returns>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static BufferWriterWrapper AsIBufferWriter(this MemoryStream stream) => new(stream);
+	/// <summary>
+	/// See <see cref="BufferWriterStream(IBufferWriter{byte})"/>
+	/// </summary>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static BufferWriterStream AsStream(this IBufferWriter<byte> writer) => new(writer);
 }

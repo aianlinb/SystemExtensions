@@ -37,7 +37,7 @@ public class ReadOnlySubStream : SubStream, IEquatable<ReadOnlySubStream> {
 	public override void WriteByte(byte value) => throw new NotSupportedException(ReadOnlyMessage);
 	/// <exception cref="NotSupportedException"/>
 	[DoesNotReturn]
-	public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken = default) => throw new NotSupportedException(ReadOnlyMessage);
+	public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) => throw new NotSupportedException(ReadOnlyMessage);
 	/// <exception cref="NotSupportedException"/>
 	[DoesNotReturn]
 	public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default) => throw new NotSupportedException(ReadOnlyMessage);
