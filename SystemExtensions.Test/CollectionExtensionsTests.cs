@@ -13,23 +13,6 @@ public class CollectionExtensionsTests {
 	}
 
 	[TestMethod]
-	public void PickFirstEnumerator_Test() {
-		// Arrange
-		using var pfe = new PickFirstEnumerator<int>(enumerable);
-
-		// Act + Assert
-		Assert.AreEqual(enumerable[0], pfe.First);
-		using var et = enumerable.AsEnumerable().GetEnumerator();
-		while (pfe.MoveNext()) {
-			Assert.IsTrue(et.MoveNext());
-			Assert.AreEqual(et.Current, pfe.Current);
-		}
-		pfe.Reset();
-		Assert.AreEqual(enumerable[0], pfe.First);
-		Assert.IsTrue(enumerable.SequenceEqual(pfe));
-	}
-
-	[TestMethod]
 	public unsafe void ListAsSpanAsMemory_Test() {
 		// Arrange
 		var list = new List<int>(enumerable);

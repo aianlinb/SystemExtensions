@@ -13,10 +13,10 @@ namespace SystemExtensions.Spans;
 public static class SpanExtensions {
 	public static ReadOnlySpan<T> AsReadOnly<T>(this Span<T> span) => span;
 	public static ReadOnlyMemory<T> AsReadOnly<T>(this Memory<T> memory) => memory;
-	public static ReadOnlySpan<T> AsReadOnlySpan<T>(this T[] array) => array;
-	public static ReadOnlySpan<T> AsReadOnlySpan<T>(this T[] array, int start, int length) => new(array, start, length);
-	public static ReadOnlyMemory<T> AsReadOnlyMemory<T>(this T[] array) => array;
-	public static ReadOnlyMemory<T> AsReadOnlyMemory<T>(this T[] array, int start, int length) => new(array, start, length);
+	public static ReadOnlySpan<T> AsReadOnlySpan<T>(this T[]? array) => array;
+	public static ReadOnlySpan<T> AsReadOnlySpan<T>(this T[]? array, int start, int length) => new(array, start, length);
+	public static ReadOnlyMemory<T> AsReadOnlyMemory<T>(this T[]? array) => array;
+	public static ReadOnlyMemory<T> AsReadOnlyMemory<T>(this T[]? array, int start, int length) => new(array, start, length);
 
 	/// <summary>
 	/// Returns a <see cref="Span{T}"/> of <see cref="byte"/> that represents the memory of the by reference parameter <paramref name="value"/>.

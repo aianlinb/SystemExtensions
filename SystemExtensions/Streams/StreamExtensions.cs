@@ -15,37 +15,15 @@ namespace SystemExtensions.Streams;
 /// </remarks>
 public static class StreamExtensions {
 	/// <summary>
-	/// Dangerous read <typeparamref name="T"/> with <paramref name="lengthInBytes"/> in bytes from <paramref name="stream"/> to the memory start from <paramref name="reference"/>
-	/// </summary>
-	/// <remarks>
-	/// The caller must ensure that the memory access to the <paramref name="reference"/> with <paramref name="lengthInBytes"/> is legal
-	/// </remarks>
-	/// <exception cref="EndOfStreamException"/>
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void ReadExactlyCore<T>(Stream stream, scoped ref T reference, int lengthInBytes) where T : unmanaged {
-		stream.ReadExactly(MemoryMarshal.CreateSpan(ref Unsafe.As<T, byte>(ref reference), lengthInBytes));
-	}
-
-	/// <summary>
-	/// Dangerous write <typeparamref name="T"/> with <paramref name="lengthInBytes"/> in bytes from the memory start from <paramref name="reference"/> to <paramref name="stream"/>
-	/// </summary>
-	/// <remarks>
-	/// The caller must ensure that the memory access to the <paramref name="reference"/> with <paramref name="lengthInBytes"/> is legal
-	/// </remarks>
-	/// <exception cref="EndOfStreamException"/>
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static void WriteCore<T>(Stream stream, scoped ref readonly T reference, int lengthInBytes) where T : unmanaged {
-		stream.Write(MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<T, byte>(ref Unsafe.AsRef(in reference)), lengthInBytes));
-	}
-
-	private static readonly SpanAction<char, Stream> createStringAction = static (Span<char> span, Stream stream) => Read(stream, span);
-	/// <summary>
 	/// Read an UTF-16 <see cref="string"/> with the length of <paramref name="charCount"/> from the <paramref name="stream"/>
 	/// </summary>
 	/// <exception cref="EndOfStreamException"/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static string ReadString(this Stream stream, int charCount) => string.Create(charCount, stream, createStringAction);
-
+	public static string ReadString(this Stream stream, int charCount) {
+		var result = Utils.FastAllocateString(charCount);
+		Read(stream, result.AsSpan().AsWritable());
+		return result;
+	}
 	/// <exception cref="EndOfStreamException"/>
 	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -58,25 +36,29 @@ public static class StreamExtensions {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static unsafe void Read<T>(this Stream stream, out T value) where T : unmanaged {
 		Unsafe.SkipInit(out value);
-		ReadExactlyCore(stream, ref value, sizeof(T));
+		stream.ReadExactly(value.AsSpan());
 	}
 	/// <exception cref="EndOfStreamException"/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static unsafe void Read<T>(this Stream stream, T[] array) where T : unmanaged { // T is not byte
-		ReadExactlyCore(stream, ref MemoryMarshal.GetArrayDataReference(array), checked(sizeof(T) * array.Length));
+	public static unsafe void Read<T>(this Stream stream, T[]? array) where T : unmanaged { // T is not byte
+		Read(stream, array.AsSpan());
 	}
 	/// <exception cref="EndOfStreamException"/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static unsafe void Read<T>(this Stream stream, scoped Span<T> span) where T : unmanaged { // T is not byte
-		ReadExactlyCore(stream, ref MemoryMarshal.GetReference(span), checked(sizeof(T) * span.Length));
+		stream.ReadExactly(MemoryMarshal.AsBytes(span));
 	}
 	/// <exception cref="EndOfStreamException"/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static void Read<T>(this Stream stream, List<T> list, int offset, int length) where T : unmanaged {
-		var count = offset + length;
-		if (list.Count < count)
-			CollectionsMarshal.SetCount(list, count);
-		Read(stream, CollectionsMarshal.AsSpan(list).Slice(offset, length));
+		var end = unchecked(offset + length);
+		if ((uint)offset > (uint)end) {
+			ArgumentOutOfRangeException.ThrowIfNegative(offset);
+			ThrowHelper.ThrowArgumentOutOfRange(length);
+		}
+		if ((uint)list.Count < (uint)end)
+			CollectionsMarshal.SetCount(list, end); // throw if end < 0
+		Read(stream, CollectionsMarshal.AsSpan(list).SliceUnchecked(offset, length));
 	}
 
 	public static byte[] ReadToEnd(this Stream stream) {
@@ -127,37 +109,36 @@ public static class StreamExtensions {
 	/// </summary>
 	/// <exception cref="EndOfStreamException"/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static void Write(this Stream stream, string str) {
-		WriteCore(stream, ref Unsafe.AsRef(in str.GetPinnableReference()), checked(str.Length * 2));
+	public static void Write(this Stream stream, string? str) {
+		Write(stream, str.AsSpan());
 	}
 	/// <exception cref="EndOfStreamException"/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static unsafe void Write<T>(this Stream stream, scoped in T value) where T : unmanaged {
-		WriteCore(stream, ref Unsafe.AsRef(in value), sizeof(T));
+		stream.Write(SpanExtensions.AsReadOnlySpan(in value));
 	}
 	/// <exception cref="EndOfStreamException"/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static unsafe void Write<T>(this Stream stream, T[] array) where T : unmanaged { // T is not byte
-		WriteCore(stream, ref MemoryMarshal.GetArrayDataReference(array), checked(sizeof(T) * array.Length));
+	public static unsafe void Write<T>(this Stream stream, T[]? array) where T : unmanaged { // T is not byte
+		Write(stream, array.AsReadOnlySpan());
 	}
 	/// <exception cref="EndOfStreamException"/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static unsafe void Write<T>(this Stream stream, scoped ReadOnlySpan<T> span) where T : unmanaged { // T is not byte
-		WriteCore(stream, ref MemoryMarshal.GetReference(span), checked(sizeof(T) * span.Length));
+		stream.Write(MemoryMarshal.AsBytes(span));
 	}
 	/// <exception cref="EndOfStreamException"/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static void Write<T>(this Stream stream, List<T> list, int offset, int length) where T : unmanaged {
-		Write(stream, CollectionsMarshal.AsSpan(list).Slice(offset, length).AsReadOnly());
+	public static void Write<T>(this Stream stream, List<T>? list, int offset, int length) where T : unmanaged {
+		Write(stream, CollectionsMarshal.AsSpan(list).AsReadOnly().Slice(offset, length));
 	}
-
 
 	/// <summary>
 	/// Write <paramref name="str"/> as an UTF-16 string to the <paramref name="writer"/>
 	/// </summary>
 	/// <exception cref="ArgumentOutOfRangeException"/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static void Write(this IBufferWriter<byte> writer, string str) {
+	public static void Write(this IBufferWriter<byte> writer, string? str) {
 		Write(writer, str.AsSpan());
 	}
 	/// <exception cref="ArgumentOutOfRangeException"/>
@@ -167,18 +148,18 @@ public static class StreamExtensions {
 	}
 	/// <exception cref="ArgumentOutOfRangeException"/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static unsafe void Write<T>(this IBufferWriter<byte> writer, T[] array) where T : unmanaged { // T is not byte
-		Write(writer, new ReadOnlySpan<T>(array));
+	public static void Write<T>(this IBufferWriter<byte> writer, T[]? array) where T : unmanaged { // T is not byte
+		Write(writer, array.AsReadOnlySpan());
 	}
 	/// <exception cref="ArgumentOutOfRangeException"/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static unsafe void Write<T>(this IBufferWriter<byte> writer, scoped ReadOnlySpan<T> span) where T : unmanaged { // T is not byte
+	public static void Write<T>(this IBufferWriter<byte> writer, scoped ReadOnlySpan<T> span) where T : unmanaged { // T is not byte
 		BuffersExtensions.Write(writer, MemoryMarshal.AsBytes(span));
 	}
 	/// <exception cref="ArgumentOutOfRangeException"/>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static void Write<T>(this IBufferWriter<byte> writer, List<T> list, int offset, int length) where T : unmanaged {
-		Write(writer, CollectionsMarshal.AsSpan(list).Slice(offset, length).AsReadOnly());
+	public static void Write<T>(this IBufferWriter<byte> writer, List<T>? list, int offset, int length) where T : unmanaged {
+		Write(writer, CollectionsMarshal.AsSpan(list).AsReadOnly().Slice(offset, length));
 	}
 
 	/// <summary>
