@@ -30,4 +30,38 @@ public class CollectionExtensionsTests {
 			Assert.IsTrue(expected == actual2);
 		}
 	}
+
+	[TestMethod]
+	public void SingleEnumerable_Test() {
+		// Arrange
+		const int expected1 = 42;
+		const string expected2 = "HelloWorld('print')";
+		var expected3 = new[] { 1, 2, 3 };
+
+		// Act
+		var singleValue = new SingleEnumerable<int>(expected1);
+		var singleString = new SingleEnumerable<string>(expected2);
+		var singleClass = new SingleEnumerable<int[]>(expected3);
+
+		// Assert
+		DoAssert(singleValue, expected1);
+		DoAssert(singleString, expected2);
+		DoAssert(singleClass, expected3);
+
+		static void DoAssert<T>(IEnumerable<T> enumerable, T expected) {
+			// IEnumerable
+			Assert.AreEqual(1, enumerable.Count());
+			Assert.AreEqual(expected, enumerable.First());
+
+			// IEnumerator
+			using var itr = enumerable.GetEnumerator();
+			Assert.IsTrue(itr.MoveNext());
+			Assert.AreEqual(expected, itr.Current);
+			Assert.IsFalse(itr.MoveNext());
+			itr.Reset();
+			Assert.IsTrue(itr.MoveNext());
+			Assert.AreEqual(expected, itr.Current);
+			Assert.IsFalse(itr.MoveNext());
+		}
+	}
 }
