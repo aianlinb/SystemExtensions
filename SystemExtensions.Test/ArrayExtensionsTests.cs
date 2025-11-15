@@ -1,4 +1,4 @@
-﻿using System.Runtime.InteropServices;
+using System.Runtime.InteropServices;
 
 namespace SystemExtensions.Tests;
 [TestClass]
@@ -15,7 +15,7 @@ public class ArrayExtensionsTests {
 	public void Insert_Test(int index) {
 		const int item = 0;
 		if (index < 0 || index > array.Length) {
-			Assert.ThrowsException<ArgumentOutOfRangeException>(() => array.Insert(index, item));
+			Assert.Throws<ArgumentOutOfRangeException>(() => array.Insert(index, item));
 			return;
 		}
 
@@ -39,7 +39,7 @@ public class ArrayExtensionsTests {
 	[DataRow(6)]
 	public void RemoveAt_Test(int index) {
 		if (index < 0 || index >= array.Length) {
-			Assert.ThrowsException<ArgumentOutOfRangeException>(() => array.RemoveAt(index));
+			Assert.Throws<ArgumentOutOfRangeException>(() => array.RemoveAt(index));
 			return;
 		}
 
@@ -62,7 +62,7 @@ public class ArrayExtensionsTests {
 	public void AsList_Test(int count) {
 		// Act
 		if (count < 0 || count > array.Length) {
-			Assert.ThrowsException<ArgumentOutOfRangeException>(() => array.AsList(count));
+			Assert.Throws<ArgumentOutOfRangeException>(() => array.AsList(count));
 			return;
 		}
 		var result = array.AsList(count);
@@ -72,7 +72,7 @@ public class ArrayExtensionsTests {
 			Assert.IsTrue(CollectionsMarshal.AsSpan(result).Overlaps(new(array, 0, count), out var offset));
 			Assert.AreEqual(0, offset);
 		} else // count == 0
-			Assert.AreEqual(0, result.Count);
+			Assert.IsEmpty(result);
 		Assert.AreEqual(array.Length, result.Capacity);
 	}
 

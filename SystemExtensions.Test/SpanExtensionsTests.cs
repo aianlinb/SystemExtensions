@@ -1,4 +1,4 @@
-﻿using System.Runtime.InteropServices;
+using System.Runtime.InteropServices;
 
 namespace SystemExtensions.Tests;
 
@@ -312,12 +312,12 @@ public class SpanExtensionsTests {
 
 		Assert.AreEqual(str2.IndexOf(oldChar), result7);
 
-		Assert.ThrowsException<ArgumentOutOfRangeException>(() => SpanExtensions.ReplaceFirst(str1, oldString, newString, start: -1));
-		Assert.ThrowsException<ArgumentOutOfRangeException>(() => SpanExtensions.ReplaceFirst(str2, oldString, newString, start: str2.Length + 1));
-		Assert.ThrowsException<ArgumentNullException>(() => SpanExtensions.ReplaceFirst((null as string)!, oldString, newString));
-		Assert.ThrowsException<NullReferenceException>(() => SpanExtensions.ReplaceFirst(str2, null!, newString));
-		Assert.ThrowsException<NullReferenceException>(() => SpanExtensions.ReplaceFirst(str2, oldString, null!));
-		Assert.ThrowsException<ArgumentNullException>(() => SpanExtensions.ReplaceFirst((null as string)!, oldChar, newChar));
+		Assert.Throws<ArgumentOutOfRangeException>(() => SpanExtensions.ReplaceFirst(str1, oldString, newString, start: -1));
+		Assert.Throws<ArgumentOutOfRangeException>(() => SpanExtensions.ReplaceFirst(str2, oldString, newString, start: str2.Length + 1));
+		Assert.Throws<ArgumentNullException>(() => SpanExtensions.ReplaceFirst((null as string)!, oldString, newString));
+		Assert.Throws<ArgumentNullException>(() => SpanExtensions.ReplaceFirst(str2, null!, newString));
+		Assert.Throws<ArgumentNullException>(() => SpanExtensions.ReplaceFirst(str2, oldString, null!));
+		Assert.Throws<ArgumentNullException>(() => SpanExtensions.ReplaceFirst((null as string)!, oldChar, newChar));
 	}
 	[TestMethod]
 	public void Count_Test() {

@@ -1,4 +1,4 @@
-﻿using System.Buffers;
+using System.Buffers;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -51,7 +51,7 @@ public class ValueListTests {
 
 		// Assert
 		Assert.AreEqual(9, list.Count);
-		Assert.IsTrue(9 <= list.Capacity);
+		Assert.IsLessThanOrEqualTo(list.Capacity, 9);
 		Assert.IsTrue(list.AsReadOnlySpan().SequenceEqual([0, 1, 2, 3, 4, 5, 6, 7, 8]));
 	}
 
@@ -152,7 +152,7 @@ public class ValueListTests {
 
 		// Act + Assert
 		list.EnsureCapacity(cap1);
-		Assert.IsTrue(cap1 <= list.Capacity);
+		Assert.IsLessThanOrEqualTo(list.Capacity, cap1);
 		list.EnsureCapacity(cap2);
 		Assert.IsTrue(cap1 <= list.Capacity && cap2 <= list.Capacity);
 		list.EnsureCapacity(cap3);

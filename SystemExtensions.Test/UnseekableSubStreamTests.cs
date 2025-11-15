@@ -38,7 +38,7 @@ public class UnseekableSubStreamTests {
 
 		// Act
 		if (length != -1 && length < data.Length) {
-			Assert.ThrowsException<EndOfStreamException>(() => subStream.Write(data));
+			Assert.Throws<EndOfStreamException>(() => subStream.Write(data));
 			return;
 		}
 		subStream.Write(data);
@@ -94,13 +94,13 @@ public class UnseekableSubStreamTests {
 		Assert.AreEqual(testStream.CanWrite, subStream.CanWrite);
 		Assert.IsFalse(subStream.CanSeek);
 		Assert.AreEqual(testStream.CanTimeout, subStream.CanTimeout);
-		Assert.ThrowsException<NotSupportedException>(() => subStream.Position = default);
-		Assert.ThrowsException<NotSupportedException>(() => subStream.Seek(default, default));
-		Assert.ThrowsException<NotSupportedException>(() => subStream.SetLength(default));
+		Assert.Throws<NotSupportedException>(() => subStream.Position = default);
+		Assert.Throws<NotSupportedException>(() => subStream.Seek(default, default));
+		Assert.Throws<NotSupportedException>(() => subStream.SetLength(default));
 
 		subStream.Dispose();
 		Assert.IsFalse(subStream.CanRead);
 		Assert.IsFalse(testStream.CanRead);
-		Assert.ThrowsException<ObjectDisposedException>(() => subStream.Write([]));
+		Assert.Throws<ObjectDisposedException>(() => subStream.Write([]));
 	}
 }

@@ -1,4 +1,4 @@
-﻿extern alias corelib;
+extern alias corelib;
 
 using System.Buffers.Binary;
 using System.Diagnostics;
@@ -13,20 +13,29 @@ namespace SystemExtensions;
 /// Miscellaneous or not yet classified methods
 /// </summary>
 public static class Utils {
+	/// <inheritdoc cref="FastAllocateString(int)"/>
+	[Obsolete("This method is only supported in .NET 9 and earlier versions. See also the nint overload.")]
+	private static string FastAllocateStringNET9(int length) => corelib::System.String.FastAllocateString(length);
+	/// <inheritdoc cref="FastAllocateString(int)"/>
+	[Obsolete("This method is only supported after .NET 10. See also the int overload.")]
+	private static string FastAllocateStringNET10(nint length) => corelib::System.String.FastAllocateString(length);
 	/// <summary>
 	/// Allocates a new string with <paramref name="length"/> characters which may not be initialized.
 	/// </summary>
 	/// <param name="length"><see cref="string.Length"/></param>
-	public static string FastAllocateString(int length) => corelib::System.String.FastAllocateString(length);
+    public static string FastAllocateString(int length) => Environment.Version.Major < 10 // int was changed to nint in .NET 10
+#pragma warning disable CS0618 // obsolete
+		? FastAllocateStringNET9(length) : FastAllocateStringNET10(length);
+#pragma warning restore CS0618
 
-	/// <summary>
-	/// Calls <see cref="ReverseBytes"/> if the current architecture is big-endian.
-	/// </summary>
-	/// <returns>
-	/// Whether the endianness is reversed.<br />
-	/// Equivalent to !<see cref="BitConverter.IsLittleEndian"/>.
-	/// </returns>
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+    /// <summary>
+    /// Calls <see cref="ReverseBytes"/> if the current architecture is big-endian.
+    /// </summary>
+    /// <returns>
+    /// Whether the endianness is reversed.<br />
+    /// Equivalent to !<see cref="BitConverter.IsLittleEndian"/>.
+    /// </returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static unsafe bool EnsureLittleEndian<T>(ref T value) where T : unmanaged {
 		// All if and switch statements here are optimized out by JIT
 		if (BitConverter.IsLittleEndian)

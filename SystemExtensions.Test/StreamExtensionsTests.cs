@@ -118,8 +118,8 @@ public class StreamExtensionsTests {
 	public void ReadToEndTest() {
 		// Arrange
 		var stream = new MemoryStream();
-		Assert.AreEqual(0, stream.ReadToEnd().Length);
-		Assert.AreEqual(0, stream.ReadToEndAsync().GetAwaiter().GetResult().Length);
+		Assert.IsEmpty(stream.ReadToEnd());
+		Assert.IsEmpty(stream.ReadToEndAsync().GetAwaiter().GetResult());
 
 		var expected = new byte[Random.Shared.Next(1, 2000000)];
 		Random.Shared.NextBytes(expected);
@@ -153,7 +153,7 @@ public class StreamExtensionsTests {
 		Assert.AreEqual(data.Length, ms.Length);
 
 		data.CopyTo(getMemory ? bww.GetMemory(5).Span : bww.GetSpan(5));
-		Assert.IsTrue(data.Length + 5 <= ms.Capacity); // expanded
+		Assert.IsLessThanOrEqualTo(ms.Capacity, data.Length + 5); // expanded
 		bww.Advance(data.Length);
 		Assert.AreEqual(data.Length + data.Length, ms.Length);
 
@@ -164,7 +164,7 @@ public class StreamExtensionsTests {
 		ms.SetLength(2);
 		ms.Capacity = 2;
 		Assert.AreNotEqual(0, (getMemory ? bww.GetMemory().Span : bww.GetSpan()).Length);
-		Assert.IsTrue(3 <= ms.Capacity); // expanded
+		Assert.IsLessThanOrEqualTo(ms.Capacity, 3); // expanded
 	}
 
 	[TestMethod]
@@ -178,14 +178,14 @@ public class StreamExtensionsTests {
 		Assert.IsTrue(bws.CanWrite);
 		Assert.IsFalse(bws.CanRead);
 		Assert.IsFalse(bws.CanSeek);
-		Assert.ThrowsException<NotSupportedException>(() => bws.Position = 1);
-		Assert.ThrowsException<NotSupportedException>(() => bws.Read([], default, default));
-		Assert.ThrowsException<NotSupportedException>(() => bws.Read(default));
-		await Assert.ThrowsExceptionAsync<NotSupportedException>(() => bws.ReadAsync(default).AsTask());
-		await Assert.ThrowsExceptionAsync<NotSupportedException>(() => bws.ReadAsync([], default, default, default));
-		Assert.ThrowsException<NotSupportedException>(() => bws.BeginRead([], default, default, default, default));
-		Assert.ThrowsException<NotSupportedException>(() => bws.Seek(default, default));
-		Assert.ThrowsException<NotSupportedException>(() => bws.SetLength(default));
+		Assert.Throws<NotSupportedException>(() => bws.Position = 1);
+		Assert.Throws<NotSupportedException>(() => bws.Read([], default, default));
+		Assert.Throws<NotSupportedException>(() => bws.Read(default));
+		await Assert.ThrowsAsync<NotSupportedException>(() => bws.ReadAsync(default).AsTask());
+		await Assert.ThrowsAsync<NotSupportedException>(() => bws.ReadAsync([], default, default, default));
+		Assert.Throws<NotSupportedException>(() => bws.BeginRead([], default, default, default, default));
+		Assert.Throws<NotSupportedException>(() => bws.Seek(default, default));
+		Assert.Throws<NotSupportedException>(() => bws.SetLength(default));
 
 		bws.Write(data, 0, 2);
 		Assert.IsTrue(abw.WrittenSpan.SequenceEqual(new(data, 0, 2)));

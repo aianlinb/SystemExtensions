@@ -1,4 +1,4 @@
-﻿global using System.Text;
+global using System.Text;
 
 global using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -7,6 +7,8 @@ global using SystemExtensions.Spans;
 global using SystemExtensions.Streams;
 
 global using static SystemExtensions.Tests.TestHelper;
+
+[assembly: Parallelize]
 
 namespace SystemExtensions.Tests;
 

@@ -1,4 +1,4 @@
-﻿using SystemExtensions.Tasks;
+using SystemExtensions.Tasks;
 
 namespace SystemExtensions.Tests;
 [TestClass]
@@ -77,13 +77,13 @@ public class ValueTaskExtensionsTests {
 		}
 
 		void DoAssert(ValueTask task) {
-			Assert.ThrowsException<OperationCanceledException>(() => task.AsTask().GetAwaiter().GetResult());
+			Assert.Throws<OperationCanceledException>(() => task.AsTask().GetAwaiter().GetResult());
 			Assert.IsTrue(first);
 			Assert.IsFalse(second);
 			first = false;
 		}
 		void DoAssertWithResult(ValueTask<string> task) {
-			Assert.ThrowsException<OperationCanceledException>(() => Assert.AreEqual("2", task.AsTask().GetAwaiter().GetResult()));
+			Assert.Throws<OperationCanceledException>(() => Assert.AreEqual("2", task.AsTask().GetAwaiter().GetResult()));
 			Assert.IsTrue(first);
 			Assert.IsFalse(second);
 			first = false;
@@ -132,13 +132,13 @@ public class ValueTaskExtensionsTests {
 		}
 
 		void DoAssert(ValueTask task) {
-			Assert.ThrowsException<OperationCanceledException>(() => task.AsTask().GetAwaiter().GetResult());
+			Assert.Throws<OperationCanceledException>(() => task.AsTask().GetAwaiter().GetResult());
 			Assert.IsTrue(first);
 			Assert.IsFalse(second);
 			first = false;
 		}
 		void DoAssertWithResult(ValueTask<string> task) {
-			Assert.ThrowsException<OperationCanceledException>(() => Assert.AreEqual("2", task.AsTask().GetAwaiter().GetResult()));
+			Assert.Throws<OperationCanceledException>(() => Assert.AreEqual("2", task.AsTask().GetAwaiter().GetResult()));
 			Assert.IsTrue(first);
 			Assert.IsFalse(second);
 			first = false;

@@ -1,4 +1,4 @@
-﻿using System.Buffers.Binary;
+using System.Buffers.Binary;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 
@@ -27,7 +27,8 @@ public class UtilsTests {
 			long l = Random.Shared.NextInt64();
 			Int128 ll = new((ulong)Random.Shared.NextInt64(), (ulong)Random.Shared.NextInt64());
 			KeyValuePair<Vector256<uint>, Vector256<long>> kvp = new();
-			Random.Shared.NextBytes(MemoryMarshal.AsBytes<KeyValuePair<Vector256<uint>, Vector256<long>>>(new(ref kvp)));
+			Span<KeyValuePair<Vector256<uint>, Vector256<long>>> span = new(ref kvp);
+			Random.Shared.NextBytes(MemoryMarshal.AsBytes(span));
 
 			// Snapshots
 			var b2 = b;
@@ -52,7 +53,7 @@ public class UtilsTests {
 			Assert.AreEqual(BinaryPrimitives.ReverseEndianness(i2), i);
 			Assert.AreEqual(BinaryPrimitives.ReverseEndianness(l2), l);
 			Assert.AreEqual(BinaryPrimitives.ReverseEndianness(ll2), ll);
-			MemoryMarshal.AsBytes<KeyValuePair<Vector256<uint>, Vector256<long>>>(new(ref kvp)).Reverse();
+			MemoryMarshal.AsBytes(span).Reverse();
 			Assert.AreEqual(kvp2, kvp);
 		}
 	}

@@ -46,12 +46,12 @@ public class SubStreamTests {
 		subStream.Seek(10, SeekOrigin.Current);
 		Assert.AreEqual(testStream.Position, offset + 15);
 
-		Assert.ThrowsException<ArgumentOutOfRangeException>(() => subStream.Seek(-1, SeekOrigin.Begin));
+		Assert.Throws<ArgumentOutOfRangeException>(() => subStream.Seek(-1, SeekOrigin.Begin));
 
 		// Assert ReadOnlySubStream
 		var readOnlySubStream = new ReadOnlySubStream(testStream, offset, length);
-		Assert.ThrowsException<ArgumentOutOfRangeException>(() => readOnlySubStream.Seek(-1, SeekOrigin.Begin));
-		Assert.ThrowsException<EndOfStreamException>(() => readOnlySubStream.Seek(length + 1, SeekOrigin.Begin));
+		Assert.Throws<ArgumentOutOfRangeException>(() => readOnlySubStream.Seek(-1, SeekOrigin.Begin));
+		Assert.Throws<EndOfStreamException>(() => readOnlySubStream.Seek(length + 1, SeekOrigin.Begin));
 	}
 
 	[TestMethod]
@@ -167,7 +167,7 @@ public class SubStreamTests {
 
 		// Act
 		if (length < 0) {
-			Assert.ThrowsException<ArgumentOutOfRangeException>(() => subStream.SetLength(length));
+			Assert.Throws<ArgumentOutOfRangeException>(() => subStream.SetLength(length));
 			return;
 		}
 		subStream.SetLength(length);
@@ -175,7 +175,7 @@ public class SubStreamTests {
 		// Assert
 		Assert.AreEqual(length, subStream.Length);
 		Assert.AreEqual(offset + length, testStream.Length);
-		Assert.ThrowsException<NotSupportedException>(() => new ReadOnlySubStream(testStream, offset).SetLength(length));
+		Assert.Throws<NotSupportedException>(() => new ReadOnlySubStream(testStream, offset).SetLength(length));
 	}
 
 	[TestMethod]
@@ -204,6 +204,6 @@ public class SubStreamTests {
 		subStream.Dispose();
 		Assert.IsFalse(subStream.CanRead);
 		Assert.IsFalse(testStream.CanRead);
-		Assert.ThrowsException<ObjectDisposedException>(() => subStream.BaseStream);
+		Assert.Throws<ObjectDisposedException>(() => subStream.BaseStream);
 	}
 }

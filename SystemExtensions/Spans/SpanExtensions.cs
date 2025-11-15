@@ -1,7 +1,8 @@
-﻿extern alias corelib;
+extern alias corelib;
 
 using System.Collections;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -227,6 +228,8 @@ public static class SpanExtensions {
 	/// </param>
 	public static string ReplaceFirst(this string str, string oldValue, string newValue, StringComparison comparisonType = StringComparison.CurrentCulture, int start = 0) {
 		ArgumentNullException.ThrowIfNull(str);
+		ArgumentNullException.ThrowIfNull(oldValue);
+		ArgumentNullException.ThrowIfNull(newValue);
 
 		var strSpan = str.AsSpan();
 		var pos = strSpan.Slice(start).IndexOf(oldValue, comparisonType);
@@ -234,6 +237,7 @@ public static class SpanExtensions {
 			return str;
 		pos += start;
 
+		Debug.WriteLine(Environment.Version.Major);
 		var result = Utils.FastAllocateString(strSpan.Length - oldValue.Length + newValue.Length);
 		ref var r = ref Unsafe.AsRef(in result.GetPinnableReference());
 		strSpan.SliceUnchecked(0, pos).CopyToUnchecked(ref r);
